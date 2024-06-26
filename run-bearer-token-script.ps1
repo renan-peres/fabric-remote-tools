@@ -1,0 +1,1 @@
+python "get-bearer-token.py"

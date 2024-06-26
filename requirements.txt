@@ -1,0 +1,26 @@
+# Enviroment/System Management
+# os
+# python-dotenv
+# logging
+# tempfile
+# typing
+# time
+# concurrent.futures
+
+# DataFrames
+pandas
+polars
+pyarrow
+deltalake
+
+# Database Management
+connectorx
+pyodbc
+pymssql
+duckdb
+
+# Cloud Connection/APIs
+requests
+azure-identity
+azure-devops
+azure-storage-file-datalake

@@ -1,0 +1,43 @@
+# Azure Service principal (SP) credentials
+AZURE_CLIENT_ID= "<your_azure_client_id>"
+AZURE_TENANT_ID= "<your_azure_tenant_id>"
+AZURE_CLIENT_SECRET= "<your_azure_client_secret>"
+
+# Azure DevOps details and personal access token (PAT)
+PERSONAL_ACCESS_TOKEN= "<your_ado_personal_access_token>"
+ORGANIZATIONAL_URL= "<your_ado_organization_url>"
+PROJECT_NAME= "<your_ado_project_name>"
+REPO_NAME= "<your_ado_repo_name>"
+
+# MotherDuck Token
+motherduck_token = "<your_motherduck_token>"
+
+# SQL Server Authentication
+server= "<your_sqlserver_server>"
+user= "<your_sqlserver_user>"
+password= "<your_sqlserver_password>"
+database= "<your_sqlserver_database>"
+
+# MySQL Authentication
+mysql_server= "<your_mysql_server>"
+mysql_user= "<your_mysql_user>"
+mysql_password= "<your_mysql_password>"
+
+# PostgreSQL Authentication
+pg_username = "<your_pg_username>"
+pg_password = "<your_pg_password>"
+pg_server = "<your_pg_server>"
+pg_port = 5432
+pg_database = "<your_pg_database>"
+
+# Microsoft Fabric workspace and lakehouse details
+ACCOUNT_NAME= "onelake"
+WORKSPACE_ID= "<your_fabric_workspace_id>"
+LAKEHOUSE_ID= "<your_fabric_lakehouse_id>"
+LAKEHOUSE_NAME = "<your_fabric_lakehouse_name>"
+
+# Run Notebook Job (REST API)
+ARTIFACT_ID = "<your_fabric_notebook_id>"
+
+# Run Data Pipeline (REST API)
+PIPELINE_ID = "<your_fabric_pipeline_id>"
