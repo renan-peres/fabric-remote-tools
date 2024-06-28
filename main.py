@@ -28,8 +28,7 @@ logger.addHandler(handler)
 
 class FabricAPIOperations:
     """
-    A class to handle various operations on OneLake storage, including authentication,
-    file system operations, uploads, downloads, listings, and deletions.
+    A class to handle various operations with Microsoft Fabric APIS.
     """
 
     def __init__(self):
@@ -44,14 +43,32 @@ class FabricAPIOperations:
         self.token_refresh_buffer = timedelta(minutes=5)
 
     def import_notebook_to_fabric(self, token: str, upload_from: str, source_path: str,
-                                  default_lakehouse_name: str = None,
-                                  default_lakehouse_id: str = None,
-                                  default_lakehouse_workspace_id: str = None,
-                                  environment_id: str = None,
-                                  environment_workspace_id: str = None,
-                                  max_workers: int = 5):
-        lakehouse_id = default_lakehouse_id or os.getenv("LAKEHOUSE_ID")
-        lakehouse_name = default_lakehouse_name or os.getenv("LAKEHOUSE_NAME")
+                                default_lakehouse_id: str = None,
+                                default_lakehouse_workspace_id: str = None,
+                                environment_id: str = None,
+                                environment_workspace_id: str = None,
+                                known_lakehouses: list = None,
+                                max_workers: int = 5):
+        """
+        Imports a notebook into Microsoft Fabric from various sources.
+
+        Args:
+            token (str): Authentication token for API access.
+            upload_from (str): Source of the notebook ('local', 'lakehouse', or 'github').
+            source_path (str): Path or URL of the notebook to import.
+            default_lakehouse_id (str, optional): ID of the default lakehouse.
+            default_lakehouse_workspace_id (str, optional): ID of the default lakehouse workspace.
+            environment_id (str, optional): ID of the environment.
+            environment_workspace_id (str, optional): ID of the environment workspace.
+            known_lakehouses (list, optional): List of known lakehouse IDs.
+            max_workers (int, optional): Maximum number of worker threads for concurrent imports.
+
+        This function orchestrates the import of notebooks from various sources into Microsoft Fabric.
+        It handles different upload sources, manages metadata, and uses multithreading for efficiency.
+        """
+        original_lakehouse_id = os.getenv("LAKEHOUSE_ID")
+        lakehouse_id = default_lakehouse_id or original_lakehouse_id
+        lakehouse_name = os.getenv("LAKEHOUSE_NAME")
         default_lakehouse_workspace_id = default_lakehouse_workspace_id or os.getenv("WORKSPACE_ID")
         workspace_id = environment_workspace_id or default_lakehouse_workspace_id
         environment_id = environment_id or "6524967a-18dc-44ae-86d1-0ec903e7ca05"
@@ -62,10 +79,7 @@ class FabricAPIOperations:
         if not lakehouse_id:
             raise ValueError("lakehouse_id is required. Please provide it or set LAKEHOUSE_ID in your environment variables.")
 
-        if not lakehouse_name:
-            raise ValueError("lakehouse_name is required. Please provide it or set LAKEHOUSE_NAME in your environment variables.")
-
-        print(f"Using parameters:\nworkspace_id: {workspace_id}\nlakehouse_id: {lakehouse_id}\nlakehouse_name: {lakehouse_name}\ndefault_lakehouse_workspace_id: {default_lakehouse_workspace_id}")
+        print(f"Using parameters:\nworkspace_id: {workspace_id}\nlakehouse_id: {lakehouse_id}\ndefault_lakehouse_workspace_id: {default_lakehouse_workspace_id}")
 
         notebooks_to_import = self._get_notebooks_to_import(upload_from, source_path)
 
@@ -75,7 +89,7 @@ class FabricAPIOperations:
                 future = executor.submit(
                     self._process_single_notebook,
                     upload_from, source_path, notebook_path, token, workspace_id, lakehouse_id, lakehouse_name,
-                    default_lakehouse_workspace_id, environment_id
+                    default_lakehouse_workspace_id, environment_id, known_lakehouses, default_lakehouse_id, original_lakehouse_id
                 )
                 futures.append(future)
 
@@ -87,6 +101,19 @@ class FabricAPIOperations:
                     print(f"Failed to import a notebook")
 
     def _get_notebooks_to_import(self, upload_from, source_path):
+        """
+        Retrieves a list of notebooks to import based on the source.
+
+        Args:
+            upload_from (str): Source of the notebook ('local', 'lakehouse', or 'github').
+            source_path (str): Path or URL of the notebook(s) to import.
+
+        Returns:
+            list: A list of notebook paths to import.
+
+        Determines which notebooks to import based on the source. For local files,
+        it can handle both single files and directories.
+        """
         if upload_from == "local":
             if os.path.isdir(source_path):
                 return [os.path.join(source_path, f) for f in os.listdir(source_path) if f.endswith('.ipynb')]
@@ -101,7 +128,30 @@ class FabricAPIOperations:
             return []
 
     def _process_single_notebook(self, upload_from, source_path, notebook_path, token, workspace_id, lakehouse_id, lakehouse_name,
-                                 default_lakehouse_workspace_id, environment_id):
+                                default_lakehouse_workspace_id, environment_id, known_lakehouses, default_lakehouse_id, original_lakehouse_id):
+        """
+        Processes and imports a single notebook.
+
+        Args:
+            upload_from (str): Source of the notebook.
+            source_path (str): Original source path or URL.
+            notebook_path (str): Specific path of the notebook file.
+            token (str): Authentication token.
+            workspace_id (str): ID of the workspace.
+            lakehouse_id (str): ID of the lakehouse.
+            lakehouse_name (str): Name of the lakehouse.
+            default_lakehouse_workspace_id (str): ID of the default lakehouse workspace.
+            environment_id (str): ID of the environment.
+            known_lakehouses (list): List of known lakehouse IDs.
+            default_lakehouse_id (str): ID of the default lakehouse.
+            original_lakehouse_id (str): Original ID of the lakehouse from environment variables.
+
+        Returns:
+            str: Name of the imported notebook if successful, None otherwise.
+
+        Handles the entire process of importing a single notebook, including loading content,
+        updating metadata, and creating the notebook in Fabric.
+        """
         try:
             timestamp = datetime.now().strftime('%Y-%m-%d--%H-%M-%S')
             
@@ -120,7 +170,9 @@ class FabricAPIOperations:
             else:
                 notebook_name = f"{upload_from}_{os.path.splitext(os.path.basename(notebook_path))[0]}--{timestamp}"
 
-            notebook_json = self._load_notebook_content(upload_from, source_path, notebook_path, token, workspace_id, lakehouse_id)
+            # Use the original_lakehouse_id for downloading when upload_from is 'lakehouse'
+            download_lakehouse_id = original_lakehouse_id if upload_from == 'lakehouse' else lakehouse_id
+            notebook_json = self._load_notebook_content(upload_from, source_path, notebook_path, token, workspace_id, download_lakehouse_id)
             
             if not notebook_json:
                 return None
@@ -133,12 +185,19 @@ class FabricAPIOperations:
                         "workspaceId": workspace_id
                     },
                     "lakehouse": {
-                        "default_lakehouse": lakehouse_id,
-                        "default_lakehouse_name": lakehouse_name,
                         "default_lakehouse_workspace_id": default_lakehouse_workspace_id
                     }
                 }
             }
+
+            if default_lakehouse_id:
+                new_metadata["trident"]["lakehouse"]["default_lakehouse"] = default_lakehouse_id
+            else:
+                new_metadata["trident"]["lakehouse"]["default_lakehouse"] = lakehouse_id
+                new_metadata["trident"]["lakehouse"]["default_lakehouse_name"] = lakehouse_name
+
+            if known_lakehouses:
+                new_metadata["trident"]["lakehouse"]["known_lakehouses"] = [{"id": lh} for lh in known_lakehouses]
 
             print(f"Updated notebook metadata: {json.dumps(new_metadata, indent=2)}")
 
@@ -156,6 +215,22 @@ class FabricAPIOperations:
             return None
 
     def _load_notebook_content(self, upload_from, source_path, notebook_path, token, workspace_id, lakehouse_id):
+        """
+        Loads the content of a notebook from various sources.
+
+        Args:
+            upload_from (str): Source of the notebook ('local', 'lakehouse', or 'github').
+            source_path (str): Path or URL of the notebook.
+            notebook_path (str): Specific path of the notebook file.
+            token (str): Authentication token.
+            workspace_id (str): ID of the workspace.
+            lakehouse_id (str): ID of the lakehouse.
+
+        Returns:
+            dict: JSON content of the notebook.
+
+        Loads notebook content from local files, lakehouses, or GitHub repositories.
+        """
         if upload_from == "local":
             return self._load_local_notebook(notebook_path)
         elif upload_from == "lakehouse":
@@ -209,6 +284,20 @@ class FabricAPIOperations:
         return json.loads(response.text)
 
     def _create_notebook(self, notebook_name, base64_notebook_content, token, workspace_id):
+        """
+        Creates a new notebook in Microsoft Fabric.
+
+        Args:
+            notebook_name (str): Name of the new notebook.
+            base64_notebook_content (str): Base64 encoded content of the notebook.
+            token (str): Authentication token.
+            workspace_id (str): ID of the workspace.
+
+        Returns:
+            str: Name of the created notebook if successful, None otherwise.
+
+        Sends a request to the Fabric API to create a new notebook with the provided content and metadata.
+        """
         endpoint = f"https://api.fabric.microsoft.com/v1/workspaces/{workspace_id}/items"
         payload = {
             "displayName": notebook_name,
@@ -236,6 +325,21 @@ class FabricAPIOperations:
         return None
 
     def _poll_notebook_creation(self, location_url: str, token: str, max_retries: int = 20, retry_interval: int = 5) -> dict:
+        """
+        Polls the status of a notebook creation operation.
+
+        Args:
+            location_url (str): URL to poll for creation status.
+            token (str): Authentication token.
+            max_retries (int): Maximum number of retry attempts.
+            retry_interval (int): Interval between retry attempts in seconds.
+
+        Returns:
+            dict: A dictionary containing success status and details of the operation.
+
+        Continuously checks the status of a notebook creation operation until it succeeds,
+        fails, or exceeds the maximum number of retries.
+        """
         headers = {"Authorization": f"Bearer {token}"}
         for attempt in range(max_retries):
             try:
@@ -259,6 +363,20 @@ class FabricAPIOperations:
         return {"success": False, "details": "Polling exceeded maximum retries"}
 
     def _download_from_lakehouse_temp(self, file_system_client, source_path: str, lakehouse_id: str) -> str:
+        """
+        Downloads a file from a lakehouse to a temporary location.
+
+        Args:
+            file_system_client: Azure Data Lake file system client.
+            source_path (str): Path of the file in the lakehouse.
+            lakehouse_id (str): ID of the lakehouse.
+
+        Returns:
+            str: Path to the downloaded temporary file, or None if download fails.
+
+        Downloads a file from a specified lakehouse to a temporary local file and
+        returns the path to this temporary file.
+        """
         import tempfile
         
         lakehouse_path = f"{lakehouse_id}/{source_path}"
