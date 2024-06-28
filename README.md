@@ -1,13 +1,13 @@
-# Fabric Operations
+# Fabric Remote Operation Tools
 
-Fabric Operations is a Python package that provides a set of tools for working with Microsoft Fabric APIs and OneLake storage.
+This Python package provides a set of tools for working with Microsoft Fabric APIs and OneLake storage remotely.
 
 ## Installation
 
 You can install the package directly from GitHub using pip:
 
 ```
-pip install git+https://github.com/yourusername/fabric-operations.git
+pip install git+https://github.com/renan-peres/fabric-remote-tools.git
 ```
 
 ## Usage
