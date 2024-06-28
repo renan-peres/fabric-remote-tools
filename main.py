@@ -5,11 +5,11 @@ import base64
 from datetime import datetime
 from dotenv import load_dotenv
 import logging
+import time
 from datetime import datetime, timezone, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from azure.storage.filedatalake import DataLakeServiceClient
 from azure.identity import DefaultAzureCredential
-import time  # Add this import
 
 # Load environment variables from .env file
 load_dotenv()
