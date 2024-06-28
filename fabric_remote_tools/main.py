@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-class FabricAuthOperations:
+class FabricAuth:
     def __init__(self):
         self.account_name = os.getenv("ACCOUNT_NAME")
         self.workspace_id = os.getenv("WORKSPACE_ID")
@@ -106,7 +106,7 @@ class FabricAuthOperations:
         """
         return Connection(base_url=self.organization_url, creds=BasicAuthentication('', self.personal_access_token))
 
-class OneLakeFileUtils:
+class OneLakeUtils:
     """
     A class to handle various operations on OneLake storage, including authentication,
     file system operations, uploads, downloads, listings, and deletions.
@@ -811,7 +811,7 @@ class OneLakeFileUtils:
         except Exception as e:
             print(f"Error deleting '{full_path.replace(self.lakehouse_id + '/', '')}': {str(e)}")
 
-class FabricAPIOperations:
+class FabricAPIs:
     """
     A class to handle various operations with Microsoft Fabric APIS.
     """
