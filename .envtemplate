@@ -37,7 +37,7 @@ LAKEHOUSE_ID= "<your_fabric_lakehouse_id>"
 LAKEHOUSE_NAME = "<your_fabric_lakehouse_name>"
 
 # Run Notebook Job (REST API)
-ARTIFACT_ID = "<your_fabric_notebook_id>"
+NOTEBOOK_ID = "<your_fabric_notebook_id>"
 
 # Run Data Pipeline (REST API)
 PIPELINE_ID = "<your_fabric_pipeline_id>"
