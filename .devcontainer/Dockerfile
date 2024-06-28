@@ -1,0 +1,45 @@
+# Use a specific Python version base image from Docker Hub
+FROM python:3.12.4
+
+# Set environment variables to avoid issues with debconf
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies and clean up any other Python versions
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    gcc \
+    g++ \
+    unixodbc-dev \
+    git \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get remove -y python3.11 \
+    && apt-get autoremove -y
+
+# Upgrade pip to the latest version
+RUN pip install --upgrade pip
+
+# Install python-dotenv to manage environment variables
+RUN pip install python-dotenv
+
+# Install Quarto
+RUN curl -LO https://quarto.org/download/latest/quarto-linux-amd64.deb && \
+    dpkg -i quarto-linux-amd64.deb && \
+    rm quarto-linux-amd64.deb
+
+# Create a working directory
+WORKDIR /app
+
+# Copy requirements.txt and set_env_vars.py to the container
+COPY requirements.txt .
+COPY set_env_vars.py .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Set up IPython kernel
+RUN pip install ipykernel && python -m ipykernel install --user --name=python3
+
+# Set the entrypoint to bash to keep the container running
+CMD ["bash"]

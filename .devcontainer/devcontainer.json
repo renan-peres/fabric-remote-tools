@@ -1,0 +1,38 @@
+{
+    "name": "Python Dev Container",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    "settings": {
+        "python.pythonPath": "/usr/local/bin/python"
+    },
+    "extensions": [
+        "ms-python.python",
+        "ms-azuretools.vscode-docker",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "quarto.quarto",
+        "ms-python.debugpy"
+    ],
+    "remoteEnv": {
+        "SECRET_KEY": "${{ secrets.SECRET_KEY }}",
+        "DATABASE_URL": "${{ secrets.DATABASE_URL }}",
+        "AZURE_CLIENT_ID": "${{ secrets.AZURE_CLIENT_ID }}",
+        "AZURE_TENANT_ID": "${{ secrets.AZURE_TENANT_ID }}",
+        "AZURE_CLIENT_SECRET": "${{ secrets.AZURE_CLIENT_SECRET }}",
+        "ACCOUNT_NAME": "${{ secrets.ACCOUNT_NAME }}",
+        "WORKSPACE_ID": "${{ secrets.WORKSPACE_ID }}",
+        "LAKEHOUSE_ID": "${{ secrets.LAKEHOUSE_ID }}",
+        "LAKEHOUSE_NAME": "${{ secrets.LAKEHOUSE_NAME }}",
+        "PERSONAL_ACCESS_TOKEN": "${{ secrets.PERSONAL_ACCESS_TOKEN }}",
+        "ORGANIZATIONAL_URL": "${{ secrets.ORGANIZATIONAL_URL }}",
+        "PROJECT_NAME": "${{ secrets.PROJECT_NAME }}",
+        "REPO_NAME": "${{ secrets.REPO_NAME }}",
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}",
+        "GITHUB_USERNAME": "${{ secrets.GITHUB_USERNAME }}",
+        "GITHUB_REPO_NAME": "${{ secrets.GITHUB_REPO_NAME }}"
+    },
+    "postCreateCommand": "python /app/set_env_vars.py",
+    "remoteUser": "root"
+}

@@ -1,26 +1,40 @@
-# Enviroment/System Management
-# os
-# python-dotenv
-# logging
-# tempfile
-# typing
-# time
-# concurrent.futures
+# Azure SDK components
+azure-identity==1.12.0
+azure-storage-file-datalake==12.9.1
+azure-devops==6.0.0b4
 
-# DataFrames
-pandas
-polars
-pyarrow
-deltalake
+# HTTP requests
+requests==2.28.2
 
-# Database Management
-connectorx
-pyodbc
-pymssql
-duckdb
+# Environment variables management
+python-dotenv==1.0.0
 
-# Cloud Connection/APIs
-requests
-azure-identity
-azure-devops
-azure-storage-file-datalake
+# Date and time handling
+pytz==2023.3
+
+# Data processing (optional, but often useful)
+pandas==1.5.3
+numpy==1.24.3
+
+# Data lake and big data processing (optional)
+pyarrow==11.0.0
+deltalake==0.8.0
+
+# Database connectors (optional)
+pyodbc==4.0.35
+pymssql==2.2.7
+
+# API development tools (optional)
+fastapi==0.95.1
+uvicorn==0.22.0
+
+# Testing frameworks (for development)
+pytest==7.3.1
+pytest-cov==4.0.0
+
+# Linting and formatting tools (for development)
+flake8==6.0.0
+black==23.3.0
+
+# Documentation generation (for development)
+Sphinx==6.2.1
