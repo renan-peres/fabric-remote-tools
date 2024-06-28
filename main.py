@@ -1,12 +1,15 @@
 from azure.identity import DefaultAzureCredential, InteractiveBrowserCredential, TokenCachePersistenceOptions
 from azure.storage.filedatalake import DataLakeServiceClient, FileSystemClient, DataLakeFileClient
-from azure.devops.connection import Connection
+from azure.devops.connection import Connection 
+from azure.devops.credentials import BasicAuthentication
 from azure.core.exceptions import ResourceNotFoundError
 
 import os
+import io
 import json
 import requests
 import base64
+import zipfile
 from datetime import datetime, timezone, timedelta
 import pytz
 from typing import Union, Optional, Generator, List, Tuple
@@ -97,6 +100,22 @@ class FabricAuth:
             credential=token_credential
         ).get_file_system_client(self.workspace_id)
 
+class OneLakeUtils:
+    """
+    A class to handle various operations on OneLake storage, including authentication,
+    file system operations, uploads, downloads, listings, and deletions.
+    """
+
+    def __init__(self):
+        self.workspace_id = os.getenv("WORKSPACE_ID")
+        self.lakehouse_id = os.getenv("LAKEHOUSE_ID")
+        self.organization_url = os.getenv("ORGANIZATIONAL_URL")
+        self.personal_access_token = os.getenv("PERSONAL_ACCESS_TOKEN")
+        self.project_name = os.getenv("PROJECT_NAME")
+        self.repo_name = os.getenv("REPO_NAME")
+        self.github_token = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
+        self.github_username = os.getenv("GITHUB_USERNAME")
+
     def get_azure_repo_connection(self) -> Connection:
         """
         Get the connection to Azure DevOps repository.
@@ -106,11 +125,6 @@ class FabricAuth:
         """
         return Connection(base_url=self.organization_url, creds=BasicAuthentication('', self.personal_access_token))
 
-class OneLakeUtils:
-    """
-    A class to handle various operations on OneLake storage, including authentication,
-    file system operations, uploads, downloads, listings, and deletions.
-    """
     def upload_file(self, file_client: DataLakeFileClient, local_path: str, relative_path: str) -> Tuple[bool, str]:
         """
         Upload a single file to OneLake storage.
