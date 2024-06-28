@@ -1,13 +1,26 @@
-pandas==1.3.3
-polars==0.13.55
-pyarrow==5.0.0
-deltalake==0.6.3
-connectorx==0.2.5
-pyodbc==4.0.32
-pymssql==2.2.5
-duckdb==0.3.4
-requests==2.26.0
-azure-identity==1.7.1
-azure-devops==6.0.0b4
-azure-storage-file-datalake==12.5.0
-python-dotenv==0.19.1
+# Enviroment/System Management
+# os
+# python-dotenv
+# logging
+# tempfile
+# typing
+# time
+# concurrent.futures
+
+# DataFrames
+pandas
+polars
+pyarrow
+deltalake
+
+# Database Management
+connectorx
+pyodbc
+pymssql
+duckdb
+
+# Cloud Connection/APIs
+requests
+azure-identity
+azure-devops
+azure-storage-file-datalake
