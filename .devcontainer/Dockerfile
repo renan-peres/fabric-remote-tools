@@ -11,6 +11,8 @@ RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     unixodbc-dev \
+    libssl-dev \
+    libffi-dev \
     git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
@@ -22,11 +24,6 @@ RUN pip install --upgrade pip
 
 # Install python-dotenv to manage environment variables
 RUN pip install python-dotenv
-
-# Install Quarto
-RUN curl -LO https://quarto.org/download/latest/quarto-linux-amd64.deb && \
-    dpkg -i quarto-linux-amd64.deb && \
-    rm quarto-linux-amd64.deb
 
 # Create a working directory
 WORKDIR /app
