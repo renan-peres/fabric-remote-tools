@@ -53,7 +53,7 @@ For more details, see the official [Microsoft documentation](https://learn.micro
 You can install the package directly from GitHub using pip:
 
 ```
-pip install git+https://github.com/renan-peres/fabric-remote-tools.git
+pip install https://github.com/renan-peres/fabric-remote-tools/raw/main/fabric_remote_tools-0.1.1.tar.gz
 ```
 
 ## Usage
