@@ -4,7 +4,6 @@ from azure.devops.connection import Connection
 from azure.devops.credentials import BasicAuthentication
 from azure.core.exceptions import ResourceNotFoundError
 
-import config
 import os
 import io
 import json
@@ -24,6 +23,15 @@ load_dotenv()
 
 class FabricAuth:
     def __init__(self):
+        self.account_name = os.getenv("ACCOUNT_NAME")
+        self.workspace_id = os.getenv("WORKSPACE_ID")
+        self.lakehouse_id = os.getenv("LAKEHOUSE_ID")
+        self.organization_url = os.getenv("ORGANIZATIONAL_URL")
+        self.personal_access_token = os.getenv("PERSONAL_ACCESS_TOKEN")
+        self.project_name = os.getenv("PROJECT_NAME")
+        self.repo_name = os.getenv("REPO_NAME")
+        self.github_token = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
+        self.github_username = os.getenv("GITHUB_USERNAME")
         self.token_file = "token_store.json"
         self.scope = "https://api.fabric.microsoft.com/.default"
         self.token_refresh_buffer = timedelta(minutes=5)
