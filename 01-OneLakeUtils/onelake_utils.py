@@ -1,144 +1,30 @@
-from azure.identity import DefaultAzureCredential, InteractiveBrowserCredential, TokenCachePersistenceOptions
-from azure.storage.filedatalake import DataLakeServiceClient, FileSystemClient, DataLakeFileClient
-from azure.devops.connection import Connection 
-from azure.devops.credentials import BasicAuthentication
-from azure.core.exceptions import ResourceNotFoundError
-
-import config
 import os
 import io
 import json
 import requests
 import base64
 import zipfile
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 import pytz
 from typing import Union, Optional, Generator, List, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import tempfile
 import time
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
-
-class FabricAuth:
-    def __init__(self):
-        self.token_file = "token_store.json"
-        self.scope = "https://api.fabric.microsoft.com/.default"
-        self.token_refresh_buffer = timedelta(minutes=5)
-
-    def get_authentication_token(self) -> DefaultAzureCredential:
-        return DefaultAzureCredential()
-
-    def get_bearer_token(self) -> str:
-        token, expiration_date = self._load_token_from_file()
-        if not token or datetime.now(timezone.utc) >= expiration_date - self.token_refresh_buffer:
-            print("Fetching a new token...")
-            token, expiration_date = self._get_new_token()
-        else:
-            print("Using cached token...")
-        print("Token expires on (Eastern Time):", expiration_date)
-        return token
-
-    def _get_new_token(self) -> tuple:
-        credential = InteractiveBrowserCredential(cache_persistence_options=TokenCachePersistenceOptions())
-        access_token = credential.get_token(self.scope)
-        token = access_token.token
-        expiration_timestamp = access_token.expires_on
-        expiration_date_utc = datetime.fromtimestamp(expiration_timestamp, tz=timezone.utc)
-        eastern = pytz.timezone("US/Eastern")
-        expiration_date_et = expiration_date_utc.astimezone(eastern)
-        self._save_token_to_file(token, expiration_timestamp)
-        return token, expiration_date_et
-
-    def _save_token_to_file(self, token: str, expiration_timestamp: int):
-        data = {
-            "token": token,
-            "expires_on": expiration_timestamp
-        }
-        with open(self.token_file, "w") as file:
-            json.dump(data, file)
-        print(f"Token and expiration date saved to {self.token_file}")
-
-    def _load_token_from_file(self) -> tuple:
-        if os.path.exists(self.token_file):
-            try:
-                with open(self.token_file, "r") as file:
-                    data = json.load(file)
-                    expiration_timestamp = data["expires_on"]
-                    expiration_date_utc = datetime.fromtimestamp(expiration_timestamp, tz=timezone.utc)
-                    if datetime.now(timezone.utc) < expiration_date_utc:
-                        token = data["token"]
-                        eastern = pytz.timezone("US/Eastern")
-                        expiration_date_et = expiration_date_utc.astimezone(eastern)
-                        return token, expiration_date_et
-            except (KeyError, json.JSONDecodeError, ValueError) as e:
-                print(f"Error reading token file: {e}")
-        return None, None
-
-    def get_file_system_client(self, token_credential: DefaultAzureCredential) -> FileSystemClient:
-        """
-        Get the file system client for OneLake storage.
-
-        Args:
-            token_credential (DefaultAzureCredential): The Azure credential.
-
-        Returns:
-            FileSystemClient: The file system client for OneLake storage.
-        """
-        return DataLakeServiceClient(
-            f"https://{self.account_name}.dfs.fabric.microsoft.com",
-            credential=token_credential
-        ).get_file_system_client(self.workspace_id)
+from azure.storage.filedatalake import FileSystemClient, DataLakeFileClient
+from azure.devops.connection import Connection
+from azure.core.exceptions import ResourceNotFoundError
+import config
 
 class OneLakeUtils:
-    """
-    A class to handle various operations on OneLake storage, including authentication,
-    file system operations, uploads, downloads, listings, and deletions.
-    """
-
-    def __init__(self):
-        self.workspace_id = os.getenv("WORKSPACE_ID")
-        self.lakehouse_id = os.getenv("LAKEHOUSE_ID")
-        self.organization_url = os.getenv("ORGANIZATIONAL_URL")
-        self.personal_access_token = os.getenv("PERSONAL_ACCESS_TOKEN")
-        self.project_name = os.getenv("PROJECT_NAME")
-        self.repo_name = os.getenv("REPO_NAME")
-        self.github_token = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
-        self.github_username = os.getenv("GITHUB_USERNAME")
-
-    def get_azure_repo_connection(self) -> Connection:
-        """
-        Get the connection to Azure DevOps repository.
-
-        Returns:
-            Connection: The connection to Azure DevOps repository.
-        """
-        return Connection(base_url=self.organization_url, creds=BasicAuthentication('', self.personal_access_token))
-
     def upload_file(self, file_client: DataLakeFileClient, local_path: str, relative_path: str) -> Tuple[bool, str]:
-        """
-        Upload a single file to OneLake storage.
-
-        Args:
-            file_client (DataLakeFileClient): The file client for the target file.
-            local_path (str): The local path of the file to upload.
-            relative_path (str): The relative path of the file in OneLake storage.
-
-        Returns:
-            Tuple[bool, str]: A tuple containing a boolean indicating success and a message.
-        """
         try:
             file_size = os.path.getsize(local_path)
             chunk_size = 4 * 1024 * 1024  # 4 MB chunks
 
             with open(local_path, "rb") as file:
                 if file_size <= chunk_size:
-                    # For small files, upload in one go
                     file_client.upload_data(file.read(), overwrite=True)
                 else:
-                    # For larger files, upload in chunks
                     file_client.create_file()
                     for i in range(0, file_size, chunk_size):
                         chunk = file.read(chunk_size)
@@ -150,15 +36,6 @@ class OneLakeUtils:
             return False, f"Error uploading '{relative_path}': {str(error)}"
 
     def upload_folder(self, file_system_client: FileSystemClient, source: str, target: str, verbose: bool = True) -> None:
-        """
-        Upload a folder to OneLake storage.
-
-        Args:
-            file_system_client (FileSystemClient): The file system client for OneLake storage.
-            source (str): The local source folder path.
-            target (str): The target path in OneLake storage.
-            verbose (bool, optional): Whether to print verbose output. Defaults to True.
-        """
         try:
             files_to_upload = []
             for root, _, files in os.walk(source):
@@ -175,7 +52,7 @@ class OneLakeUtils:
                 future_to_file = {
                     executor.submit(
                         self.upload_file,
-                        file_system_client.get_file_client(f"{self.lakehouse_id}/{os.path.join(target, relative_path)}"),
+                        file_system_client.get_file_client(f"{config.LAKEHOUSE_ID}/{os.path.join(target, relative_path)}"),
                         local_path,
                         relative_path
                     ): (local_path, relative_path) for local_path, relative_path in files_to_upload
@@ -404,19 +281,6 @@ class OneLakeUtils:
         return git_client.get_item_content(repository.id, path=file_path)
         
     def write_to_lakehouse(self, file_system_client: FileSystemClient, target_path: str, upload_from: str, source_path: str = "", connection: Union[Connection, None] = None, folder_path: str = None, project_name: str = None, repo_name: str = None) -> None:
-        """
-        Write data to the lakehouse from various sources.
-
-        Args:
-            file_system_client (FileSystemClient): The file system client for OneLake storage.
-            target_path (str): The target path in OneLake storage.
-            upload_from (str): The source type ('local', 'git', 'github', 'github_private', or 'azure_devops').
-            source_path (str, optional): The source path for local or git uploads.
-            connection (Union[Connection, None], optional): The connection for git uploads.
-            folder_path (str, optional): The specific folder to upload for GitHub or Azure DevOps repositories.
-            project_name (str, optional): The project name for Azure DevOps uploads.
-            repo_name (str, optional): The repository name for GitHub private or Azure DevOps uploads.
-        """
         if upload_from == "local":
             if os.path.isdir(source_path):
                 is_multiple_tables = target_path == "Tables/" and any(os.path.isdir(os.path.join(source_path, d)) for d in os.listdir(source_path))
@@ -436,14 +300,14 @@ class OneLakeUtils:
                     print(f"Uploading {source_description} '{source_path}' to '{target_path}'")
                     self.upload_folder(file_system_client, source_path, target_path, verbose=False)
             elif os.path.isfile(source_path):
-                data_path = f"{self.lakehouse_id}/{target_path}"
+                data_path = f"{config.LAKEHOUSE_ID}/{target_path}"
                 file_client = file_system_client.get_file_client(data_path)
                 print(f"Uploading local file '{source_path}' to '{target_path}'")
                 self.upload_file(file_client, source_path, os.path.basename(source_path))
             else:
                 print(f"Invalid source path: '{source_path}'")
         elif upload_from == "git" and connection:
-            data_path = f"{self.lakehouse_id}/{target_path}"
+            data_path = f"{config.LAKEHOUSE_ID}/{target_path}"
             file_client = file_system_client.get_file_client(data_path)
             print(f"Uploading from git '{source_path}' to '{target_path}'")
             file_content = self.read_file_from_repo(connection, source_path)
@@ -454,12 +318,12 @@ class OneLakeUtils:
             self.upload_github_repo(file_system_client, source_path, target_path, folder_path)
         elif upload_from == "github_private":
             if not repo_name:
-                repo_name = os.getenv("GITHUB_REPO_NAME")
+                repo_name = config.GITHUB_REPO_NAME
             self.upload_private_github_repo(file_system_client, repo_name, target_path, folder_path)
         elif upload_from == "azure_devops":
             if not project_name or not repo_name:
-                project_name = os.getenv("PROJECT_NAME")
-                repo_name = os.getenv("REPO_NAME")
+                project_name = config.PROJECT_NAME
+                repo_name = config.REPO_NAME
             self.upload_azure_devops_repo(file_system_client, project_name, repo_name, target_path, folder_path)
         else:
             print(f"Invalid upload_from value: '{upload_from}' or missing connection")
@@ -816,499 +680,3 @@ class OneLakeUtils:
             pass
         except Exception as e:
             print(f"Error deleting '{full_path.replace(self.lakehouse_id + '/', '')}': {str(e)}")
-
-class FabricAPIs:
-    """
-    A class to handle various operations with Microsoft Fabric APIS.
-    """
-    def __init__(self):
-        self.workspace_id = os.getenv("WORKSPACE_ID")
-        self.lakehouse_id = os.getenv("LAKEHOUSE_ID")
-        self.lakehouse_name = os.getenv("LAKEHOUSE_NAME")
-
-    def import_notebook_to_fabric(self, token: str, upload_from: str, source_path: str,
-                                default_lakehouse_id: str = None,
-                                default_lakehouse_workspace_id: str = None,
-                                environment_id: str = None,
-                                environment_workspace_id: str = None,
-                                known_lakehouses: list = None,
-                                max_workers: int = 5):
-        """
-        Imports a notebook into Microsoft Fabric from various sources.
-
-        Args:
-            token (str): Authentication token for API access.
-            upload_from (str): Source of the notebook ('local', 'lakehouse', or 'github').
-            source_path (str): Path or URL of the notebook to import.
-            default_lakehouse_id (str, optional): ID of the default lakehouse.
-            default_lakehouse_workspace_id (str, optional): ID of the default lakehouse workspace.
-            environment_id (str, optional): ID of the environment.
-            environment_workspace_id (str, optional): ID of the environment workspace.
-            known_lakehouses (list, optional): List of known lakehouse IDs.
-            max_workers (int, optional): Maximum number of worker threads for concurrent imports.
-
-        This function orchestrates the import of notebooks from various sources into Microsoft Fabric.
-        It handles different upload sources, manages metadata, and uses multithreading for efficiency.
-        """
-        original_lakehouse_id = os.getenv("LAKEHOUSE_ID")
-        lakehouse_id = default_lakehouse_id or original_lakehouse_id
-        lakehouse_name = os.getenv("LAKEHOUSE_NAME")
-        default_lakehouse_workspace_id = default_lakehouse_workspace_id or os.getenv("WORKSPACE_ID")
-        workspace_id = environment_workspace_id or default_lakehouse_workspace_id
-        environment_id = environment_id or "6524967a-18dc-44ae-86d1-0ec903e7ca05"
-
-        if not workspace_id:
-            raise ValueError("workspace_id is required. Please provide it or set WORKSPACE_ID in your environment variables.")
-
-        if not lakehouse_id:
-            raise ValueError("lakehouse_id is required. Please provide it or set LAKEHOUSE_ID in your environment variables.")
-
-        print(f"Using parameters:\nworkspace_id: {workspace_id}\nlakehouse_id: {lakehouse_id}\ndefault_lakehouse_workspace_id: {default_lakehouse_workspace_id}")
-
-        notebooks_to_import = self._get_notebooks_to_import(upload_from, source_path)
-
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = []
-            for notebook_path in notebooks_to_import:
-                future = executor.submit(
-                    self._process_single_notebook,
-                    upload_from, source_path, notebook_path, token, workspace_id, lakehouse_id, lakehouse_name,
-                    default_lakehouse_workspace_id, environment_id, known_lakehouses, default_lakehouse_id, original_lakehouse_id
-                )
-                futures.append(future)
-
-            for future in as_completed(futures):
-                result = future.result()
-                if result:
-                    print(f"Successfully imported: {result}")
-                else:
-                    print(f"Failed to import a notebook")
-
-    def _get_notebooks_to_import(self, upload_from, source_path):
-        """
-        Retrieves a list of notebooks to import based on the source.
-
-        Args:
-            upload_from (str): Source of the notebook ('local', 'lakehouse', or 'github').
-            source_path (str): Path or URL of the notebook(s) to import.
-
-        Returns:
-            list: A list of notebook paths to import.
-
-        Determines which notebooks to import based on the source. For local files,
-        it can handle both single files and directories.
-        """
-        if upload_from == "local":
-            if os.path.isdir(source_path):
-                return [os.path.join(source_path, f) for f in os.listdir(source_path) if f.endswith('.ipynb')]
-            else:
-                return [source_path]
-        elif upload_from == "lakehouse":
-            return [source_path]
-        elif upload_from == "github":
-            return [source_path]
-        else:
-            print(f"Unsupported upload_from value: {upload_from}")
-            return []
-
-    def _process_single_notebook(self, upload_from, source_path, notebook_path, token, workspace_id, lakehouse_id, lakehouse_name,
-                                default_lakehouse_workspace_id, environment_id, known_lakehouses, default_lakehouse_id, original_lakehouse_id):
-        """
-        Processes and imports a single notebook.
-
-        Args:
-            upload_from (str): Source of the notebook.
-            source_path (str): Original source path or URL.
-            notebook_path (str): Specific path of the notebook file.
-            token (str): Authentication token.
-            workspace_id (str): ID of the workspace.
-            lakehouse_id (str): ID of the lakehouse.
-            lakehouse_name (str): Name of the lakehouse.
-            default_lakehouse_workspace_id (str): ID of the default lakehouse workspace.
-            environment_id (str): ID of the environment.
-            known_lakehouses (list): List of known lakehouse IDs.
-            default_lakehouse_id (str): ID of the default lakehouse.
-            original_lakehouse_id (str): Original ID of the lakehouse from environment variables.
-
-        Returns:
-            str: Name of the imported notebook if successful, None otherwise.
-
-        Handles the entire process of importing a single notebook, including loading content,
-        updating metadata, and creating the notebook in Fabric.
-        """
-        try:
-            timestamp = datetime.now().strftime('%Y-%m-%d--%H-%M-%S')
-            
-            if upload_from == "github":
-                repo_parts = source_path.split('/')
-                owner = repo_parts[3]
-                repo_name = repo_parts[4]
-                file_path = '/'.join(repo_parts[7:])
-                
-                github_path = f"github/{owner}/{repo_name}/{file_path}"
-                notebook_name = f"{github_path}--{timestamp}"
-            elif upload_from == "local":
-                notebook_name = f"local/{os.path.basename(notebook_path)}--{timestamp}"
-            elif upload_from == "lakehouse":
-                notebook_name = f"lakehouse/{lakehouse_name}/{notebook_path}--{timestamp}"
-            else:
-                notebook_name = f"{upload_from}_{os.path.splitext(os.path.basename(notebook_path))[0]}--{timestamp}"
-
-            # Use the original_lakehouse_id for downloading when upload_from is 'lakehouse'
-            download_lakehouse_id = original_lakehouse_id if upload_from == 'lakehouse' else lakehouse_id
-            notebook_json = self._load_notebook_content(upload_from, source_path, notebook_path, token, workspace_id, download_lakehouse_id)
-            
-            if not notebook_json:
-                return None
-
-            new_metadata = {
-                "language_info": {"name": "python"},
-                "trident": {
-                    "environment": {
-                        "environmentId": environment_id,
-                        "workspaceId": workspace_id
-                    },
-                    "lakehouse": {
-                        "default_lakehouse_workspace_id": default_lakehouse_workspace_id
-                    }
-                }
-            }
-
-            if default_lakehouse_id:
-                new_metadata["trident"]["lakehouse"]["default_lakehouse"] = default_lakehouse_id
-            else:
-                new_metadata["trident"]["lakehouse"]["default_lakehouse"] = lakehouse_id
-                new_metadata["trident"]["lakehouse"]["default_lakehouse_name"] = lakehouse_name
-
-            if known_lakehouses:
-                new_metadata["trident"]["lakehouse"]["known_lakehouses"] = [{"id": lh} for lh in known_lakehouses]
-
-            print(f"Updated notebook metadata: {json.dumps(new_metadata, indent=2)}")
-
-            new_notebook = {
-                "nbformat": 4,
-                "nbformat_minor": 5,
-                "cells": notebook_json.get("cells", []),
-                "metadata": new_metadata
-            }
-
-            base64_notebook_content = base64.b64encode(json.dumps(new_notebook).encode('utf-8')).decode('utf-8')
-            return self._create_notebook(notebook_name, base64_notebook_content, token, workspace_id)
-        except Exception as e:
-            print(f"Error processing notebook {notebook_path}: {str(e)}")
-            return None
-
-    def _load_notebook_content(self, upload_from, source_path, notebook_path, token, workspace_id, lakehouse_id):
-        """
-        Loads the content of a notebook from various sources.
-
-        Args:
-            upload_from (str): Source of the notebook ('local', 'lakehouse', or 'github').
-            source_path (str): Path or URL of the notebook.
-            notebook_path (str): Specific path of the notebook file.
-            token (str): Authentication token.
-            workspace_id (str): ID of the workspace.
-            lakehouse_id (str): ID of the lakehouse.
-
-        Returns:
-            dict: JSON content of the notebook.
-
-        Loads notebook content from local files, lakehouses, or GitHub repositories.
-        """
-        if upload_from == "local":
-            return self._load_local_notebook(notebook_path)
-        elif upload_from == "lakehouse":
-            return self._load_lakehouse_notebook(notebook_path, token, workspace_id, lakehouse_id)
-        elif upload_from == "github":
-            return self._load_github_notebook(source_path)
-        else:
-            print("Invalid upload_from parameter. Use 'local', 'lakehouse', or 'github'.")
-            return None
-
-    def _load_local_notebook(self, source_path):
-        if os.path.exists(source_path):
-            with open(source_path, "r", encoding="utf-8") as file:
-                return json.load(file)
-        else:
-            print(f"Failed to locate the local notebook file: {source_path}")
-            return None
-
-    def _load_lakehouse_notebook(self, source_path, token, workspace_id, lakehouse_id):
-        token_credential = DefaultAzureCredential()
-        file_system_client = DataLakeServiceClient(
-            f"https://onelake.dfs.fabric.microsoft.com",
-            credential=token_credential
-        ).get_file_system_client(workspace_id)
-
-        temp_file_path = self._download_from_lakehouse_temp(file_system_client, source_path, lakehouse_id)
-        if temp_file_path:
-            with open(temp_file_path, "r", encoding="utf-8") as file:
-                notebook_json = json.load(file)
-            os.unlink(temp_file_path)  # Delete the temporary file
-            return notebook_json
-        else:
-            print("Failed to download the notebook file from lakehouse.")
-            return None
-
-    def _load_github_notebook(self, repo_url):
-        try:
-            return self._download_file_from_github(repo_url)
-        except Exception as e:
-            print(f"Failed to download the notebook file from GitHub: {str(e)}")
-            return None
-
-    def _download_file_from_github(self, repo_url: str) -> dict:
-        parts = repo_url.split('/')
-        owner, repo, branch = parts[3], parts[4], parts[6]
-        file_path = '/'.join(parts[7:])
-        raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{file_path}"
-        print(f"Attempting to download from: {raw_url}")
-        response = requests.get(raw_url)
-        response.raise_for_status()
-        return json.loads(response.text)
-
-    def _create_notebook(self, notebook_name, base64_notebook_content, token, workspace_id):
-        """
-        Creates a new notebook in Microsoft Fabric.
-
-        Args:
-            notebook_name (str): Name of the new notebook.
-            base64_notebook_content (str): Base64 encoded content of the notebook.
-            token (str): Authentication token.
-            workspace_id (str): ID of the workspace.
-
-        Returns:
-            str: Name of the created notebook if successful, None otherwise.
-
-        Sends a request to the Fabric API to create a new notebook with the provided content and metadata.
-        """
-        endpoint = f"https://api.fabric.microsoft.com/v1/workspaces/{workspace_id}/items"
-        payload = {
-            "displayName": notebook_name,
-            "type": "Notebook",
-            "description": "Notebook created via API",
-            "definition": {
-                "format": "ipynb",
-                "parts": [{"path": "artifact.content.ipynb", "payload": base64_notebook_content, "payloadType": "InlineBase64"}]
-            }
-        }
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-
-        response = requests.post(endpoint, json=payload, headers=headers)
-        response.raise_for_status()
-
-        if response.status_code == 201:
-            print(f"Notebook created successfully. ID: {response.json().get('id')}")
-            return notebook_name
-        elif response.status_code == 202:
-            location_url = response.headers.get("Location")
-            poll_result = self._poll_notebook_creation(location_url, token)
-            if poll_result["success"]:
-                print(f"Notebook created successfully. ID: {poll_result['id']}")
-                return notebook_name
-        return None
-
-    def _poll_notebook_creation(self, location_url: str, token: str, max_retries: int = 20, retry_interval: int = 5) -> dict:
-        """
-        Polls the status of a notebook creation operation.
-
-        Args:
-            location_url (str): URL to poll for creation status.
-            token (str): Authentication token.
-            max_retries (int): Maximum number of retry attempts.
-            retry_interval (int): Interval between retry attempts in seconds.
-
-        Returns:
-            dict: A dictionary containing success status and details of the operation.
-
-        Continuously checks the status of a notebook creation operation until it succeeds,
-        fails, or exceeds the maximum number of retries.
-        """
-        headers = {"Authorization": f"Bearer {token}"}
-        for attempt in range(max_retries):
-            try:
-                poll_response = requests.get(location_url, headers=headers)
-                poll_response.raise_for_status()
-                
-                response_json = poll_response.json()
-                status = response_json.get('status', '').lower()
-                
-                if status == 'succeeded':
-                    print(f"Poll response: {response_json}")
-                    return {"success": True, "id": response_json.get('resourceId'), "details": response_json}
-                elif status in ['failed', 'canceled']:
-                    print(f"Poll response: {response_json}")
-                    return {"success": False, "details": response_json}
-                time.sleep(retry_interval)
-            except requests.RequestException as e:
-                print(f"Error during polling: {e}")
-                time.sleep(retry_interval)
-        
-        return {"success": False, "details": "Polling exceeded maximum retries"}
-
-    def _download_from_lakehouse_temp(self, file_system_client, source_path: str, lakehouse_id: str) -> str:
-        """
-        Downloads a file from a lakehouse to a temporary location.
-
-        Args:
-            file_system_client: Azure Data Lake file system client.
-            source_path (str): Path of the file in the lakehouse.
-            lakehouse_id (str): ID of the lakehouse.
-
-        Returns:
-            str: Path to the downloaded temporary file, or None if download fails.
-
-        Downloads a file from a specified lakehouse to a temporary local file and
-        returns the path to this temporary file.
-        """
-        import tempfile
-        
-        lakehouse_path = f"{lakehouse_id}/{source_path}"
-        
-        try:
-            file_client = file_system_client.get_file_client(lakehouse_path)
-            
-            # Create a temporary file
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".ipynb")
-            temp_file_path = temp_file.name
-            
-            # Download the file content
-            with open(temp_file_path, "wb") as file_handle:
-                download = file_client.download_file()
-                download.readinto(file_handle)
-            
-            print(f"File downloaded to temporary location: {temp_file_path}")
-            return temp_file_path
-        
-        except Exception as e:
-            print(f"Error downloading file from '{source_path}': {str(e)}")
-            return None
-        
-    def run_notebook_job(self, token: str, notebook_id: str, workspace_id: str = None, lakehouse_id: str = None, lakehouse_name: str = None) -> str:
-        """
-        Run a Spark notebook job.
-
-        Args:
-            token (str): The authentication token.
-            notebook_id (str): The ID of the notebook to run.
-            workspace_id (str, optional): The ID of the workspace. If not provided, uses the value from environment variables or None.
-            lakehouse_id (str, optional): The ID of the lakehouse. If not provided, uses the value from environment variables or None.
-            lakehouse_name (str, optional): The name of the lakehouse. If not provided, uses the value from environment variables or None.
-
-        Returns:
-            str: The location URL of the triggered job, or None if the job failed to trigger.
-        """
-        workspace_id = workspace_id or self.workspace_id or None
-        lakehouse_id = lakehouse_id or self.lakehouse_id or None
-        lakehouse_name = lakehouse_name or self.lakehouse_name or None
-
-        if not workspace_id:
-            print("Warning: workspace_id is not provided and not set in environment variables.")
-
-        endpoint = f"https://api.fabric.microsoft.com/v1/workspaces/{workspace_id}/items/{notebook_id}/jobs/instances?jobType=RunNotebook"
-        
-        payload = {
-            "executionData": {
-                "useStarterPool": True
-            }
-        }
-
-        if lakehouse_id and lakehouse_name:
-            payload["executionData"]["defaultLakehouse"] = {
-                "name": lakehouse_name,
-                "id": lakehouse_id,
-            }
-        elif lakehouse_id or lakehouse_name:
-            print("Warning: Both lakehouse_id and lakehouse_name must be provided to set the default lakehouse.")
-
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        response = requests.post(endpoint, json=payload, headers=headers)
-        if response.status_code == 202:
-            return response.headers.get("Location")
-        else:
-            print(f"Failed to trigger notebook job. Status code: {response.status_code}, Response text: {response.text}")
-            return None
-
-    def trigger_pipeline_job(self, token: str, pipeline_id: str, workspace_id: str = None) -> str:
-        """
-        Trigger a data pipeline job.
-
-        Args:
-            token (str): The authentication token.
-            pipeline_id (str): The ID of the pipeline to trigger.
-            workspace_id (str, optional): The ID of the workspace. If not provided, uses the value from environment variables or None.
-
-        Returns:
-            str: The location URL of the triggered job, or None if the job failed to trigger.
-        """
-        workspace_id = workspace_id or self.workspace_id or None
-
-        if not workspace_id:
-            print("Warning: workspace_id is not provided and not set in environment variables.")
-
-        endpoint = f"https://api.fabric.microsoft.com/v1/workspaces/{workspace_id or ''}/items/{pipeline_id}/jobs/instances?jobType=Pipeline"
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        response = requests.post(endpoint, headers=headers)
-        if response.status_code == 202:
-            return response.headers.get("Location")
-        else:
-            print(f"Failed to trigger pipeline job. Status code: {response.status_code}, Response text: {response.text}")
-            return None
-
-    def trigger_table_maintenance_job(self, table_name: str, token: str) -> str:
-        """
-        Trigger a Delta table maintenance job.
-
-        Args:
-            table_name (str): The name of the table to maintain.
-            token (str): The authentication token.
-
-        Returns:
-            str: The location URL of the triggered job, or None if the job failed to trigger.
-        """
-        endpoint = f"https://api.fabric.microsoft.com/v1/workspaces/{self.workspace_id}/lakehouses/{self.lakehouse_id}/jobs/instances?jobType=TableMaintenance"
-        payload = {
-            "executionData": {
-                "tableName": table_name,
-                "optimizeSettings": {"vOrder": True},
-                "vacuumSettings": {"retentionPeriod": "7:01:00:00"}
-            }
-        }
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        response = requests.post(endpoint, json=payload, headers=headers)
-        if response.status_code == 202:
-            return response.headers.get("Location")
-        else:
-            print(f"Failed to trigger table maintenance job. Status code: {response.status_code}, Response text: {response.text}")
-            return None
-
-    def trigger_table_maintenance_for_all_tables(self, token: str, file_system_client: FileSystemClient, batch_size: int = 5, batch_delay: int = 60):
-        """
-        Trigger maintenance jobs for all tables in the lakehouse.
-
-        Args:
-            token (str): The authentication token.
-            file_system_client (FileSystemClient): The file system client for OneLake storage.
-            batch_size (int, optional): Number of tables to process in each batch. Defaults to 5.
-            batch_delay (int, optional): Delay between batches in seconds. Defaults to 60.
-        """
-        # Get the filtered subdirectory names for "Tables"
-        filtered_tables = self.list_items(file_system_client=file_system_client, target_directory_path="Tables")
-
-        # Iterate over the filtered tables in batches
-        for i in range(0, len(filtered_tables), batch_size):
-            batch_tables = filtered_tables[i:i + batch_size]
-            for table_name in batch_tables:
-                try:
-                    result = self.trigger_table_maintenance_job(table_name=table_name, token=token)
-                    if result is not None:
-                        print(f"Table maintenance job triggered for table: {table_name}")
-                    else:
-                        print(f"Failed to trigger table maintenance job for table: {table_name}")
-                except Exception as e:
-                    print(f"An error occurred for table {table_name}: {e}")
-            
-            # Delay between batches
-            if i + batch_size < len(filtered_tables):
-                print(f"Waiting for {batch_delay} seconds before triggering the next batch...")
-                time.sleep(batch_delay)
