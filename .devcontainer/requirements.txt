@@ -1,14 +1,28 @@
+# Enviroment/System Management
 python-dotenv
 typing
+
+# DataFrames
 pandas
 polars
 pyarrow
 deltalake
+
+# Database Management
 connectorx
 pyodbc
 pymssql
 duckdb
+
+# Cloud Connection/APIs
 requests
 azure-identity
 azure-devops
 azure-storage-file-datalake
+
+# Other Dependencies
+os
+logging
+tempfile
+time
+concurrent.futures
