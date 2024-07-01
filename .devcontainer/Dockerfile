@@ -38,5 +38,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Set up IPython kernel
 RUN pip install ipykernel && python -m ipykernel install --user --name=python3
 
+# Install fabric_remote_tools
+RUN pip install https://github.com/renan-peres/fabric-remote-tools/raw/main/fabric_remote_tools-0.1.1.tar.gz
+
 # Set the entrypoint to bash to keep the container running
 CMD ["bash"]
