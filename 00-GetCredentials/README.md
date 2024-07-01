@@ -80,14 +80,14 @@ To interact with OneLake storage, you need to set up Azure Service Principal cre
 ### Azure Portal Steps
 
 1. **Register a New Application** in the Azure Portal, navigate to Entra ID.
-   ![Register a New Application 1](assets/azure_register_application_1.png)
-   ![Register a New Application 2](assets/azure_register_application_2.png)
+   ![Register a New Application 1](../assets/images/azure_register_application_1.png)
+   ![Register a New Application 2](../assets/images/azure_register_application_2.png)
 
 2. **Get Client & Tenant IDs** from the application's overview page.
-   ![Client and Tenant IDs](assets/azure_client_id.png)
+   ![Client and Tenant IDs](../assets/images/azure_client_id.png)
 
 3. **Create & Get Client Secret** in the Certificates & secrets section.
-   ![Client Secret](assets/azure_client_secret.png)
+   ![Client Secret](../assets/images/azure_client_secret.png)
 
 Edit the `.env` file with the obtained values from the Azure Portal:
 
@@ -101,10 +101,10 @@ AZURE_CLIENT_SECRET= "<your_azure_client_secret>"
 ### Fabric Portal Steps
 
 1. **Get Workspace ID, Lakehouse ID** from the Fabric Portal URL.
-   ![Workspace Access](assets/fabric_workspaceID_lakehouseID.png)
+   ![Workspace Access](../assets/images/fabric_workspaceID_lakehouseID.png)
 
 2. **Add Application Service Principal to Workspace** with at least Contributor access.
-   ![Workspace Access](assets/fabric_workspace_ss_access.png)
+   ![Workspace Access](../assets/images/fabric_workspace_ss_access.png)
 
 Edit the `.env` file with the obtained values from the Fabric Portal.
 
@@ -120,17 +120,17 @@ LAKEHOUSE_NAME = "<your_fabric_lakehouse_name>"
 
 1. **Create a Personal Access Token (PAT)**:
 - Navigate to user settings in Azure DevOps portal.
-![Personal Access Tokens Menu](assets/ADO_PAT_1.png)
+![Personal Access Tokens Menu](../assets/images/ADO_PAT_1.png)
 - Click on the "+ New Token" button to create a new PAT.
-![New Token Button](assets/ADO_PAT_2.png)
+![New Token Button](../assets/images/ADO_PAT_2.png)
 - Fill in the token details and create it.
-![Create PAT Form](assets/ADO_PAT_3.png)
+![Create PAT Form](../assets/images/ADO_PAT_3.png)
 - Copy the token immediately after creation.
-![Copy PAT](assets/ADO_PAT_4.png)
+![Copy PAT](../assets/images/ADO_PAT_4.png)
 
 2. **Get Organization URL, Project Name, and Repo Name**
-![URL and Project Name](assets/ADO_URL_projectName.png)
-![Repo Name](assets/ADO_repoName.png)
+![URL and Project Name](../assets/images/ADO_URL_projectName.png)
+![Repo Name](../assets/images/ADO_repoName.png)
 
 3. **Update the `.env` file** file with the obtained values from the Azure DevOps Portal.
 
@@ -148,11 +148,11 @@ Create a PAT in GitHub with appropriate permissions at [Create New Access Token]
 
 1. **Create a Personal Access Token (PAT)**:
 - Go to GitHub account settings > Developer settings > Personal access tokens -> Gerate new roken (classic).
-![GitHub PAT](assets/github_PAT_1.png)
+![GitHub PAT](../assets/images/github_PAT_1.png)
 - Generate a new token with necessary permissions.
-![GitHub PAT](assets/github_PAT_2.png)
+![GitHub PAT](../assets/images/github_PAT_2.png)
 - Copy the generated token immediately.
-![GitHub PAT](assets/github_PAT_3.png)
+![GitHub PAT](../assets/images/github_PAT_3.png)
 
 2. **Get Your Username and Private Repo Name**
 
