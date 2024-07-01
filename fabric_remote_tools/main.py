@@ -16,116 +16,127 @@ from typing import Union, Optional, Generator, List, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import tempfile
 import time
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 class FabricAuth:
-    def __init__(self):
-        self.account_name = os.getenv("ACCOUNT_NAME")
-        self.workspace_id = os.getenv("WORKSPACE_ID")
-        self.lakehouse_id = os.getenv("LAKEHOUSE_ID")
-        self.organization_url = os.getenv("ORGANIZATIONAL_URL")
-        self.personal_access_token = os.getenv("PERSONAL_ACCESS_TOKEN")
-        self.project_name = os.getenv("PROJECT_NAME")
-        self.repo_name = os.getenv("REPO_NAME")
-        self.github_token = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
-        self.github_username = os.getenv("GITHUB_USERNAME")
-        self.token_file = "token_store.json"
-        self.scope = "https://api.fabric.microsoft.com/.default"
-        self.token_refresh_buffer = timedelta(minutes=5)
+    def get_service_principal_token() -> DefaultAzureCredential:
+        """
+        Retrieves a DefaultAzureCredential object for service principal authentication.
 
-    def get_authentication_token(self) -> DefaultAzureCredential:
+        This function returns a DefaultAzureCredential, which can be used to authenticate 
+        with Azure services using a service principal. It uses the default Azure 
+        authentication flow, which attempts to authenticate using multiple methods 
+        in a specific order, with emphasis on service principal credentials.
+
+        Returns:
+            DefaultAzureCredential: An object that can be used for Azure authentication 
+                                    using service principal credentials.
+
+        Note:
+            Ensure that the necessary environment variables or configuration files 
+            for service principal authentication are properly set up in your environment.
+        """
         return DefaultAzureCredential()
 
-    def get_bearer_token(self) -> str:
-        token, expiration_date = self._load_token_from_file()
-        if not token or datetime.now(timezone.utc) >= expiration_date - self.token_refresh_buffer:
-            print("Fetching a new token...")
-            token, expiration_date = self._get_new_token()
-        else:
-            print("Using cached token...")
-        print("Token expires on (Eastern Time):", expiration_date)
-        return token
-
-    def _get_new_token(self) -> tuple:
-        credential = InteractiveBrowserCredential(cache_persistence_options=TokenCachePersistenceOptions())
-        access_token = credential.get_token(self.scope)
-        token = access_token.token
-        expiration_timestamp = access_token.expires_on
-        expiration_date_utc = datetime.fromtimestamp(expiration_timestamp, tz=timezone.utc)
-        eastern = pytz.timezone("US/Eastern")
-        expiration_date_et = expiration_date_utc.astimezone(eastern)
-        self._save_token_to_file(token, expiration_timestamp)
-        return token, expiration_date_et
-
-    def _save_token_to_file(self, token: str, expiration_timestamp: int):
-        data = {
-            "token": token,
-            "expires_on": expiration_timestamp
-        }
-        with open(self.token_file, "w") as file:
-            json.dump(data, file)
-        print(f"Token and expiration date saved to {self.token_file}")
-
-    def _load_token_from_file(self) -> tuple:
-        if os.path.exists(self.token_file):
-            try:
-                with open(self.token_file, "r") as file:
-                    data = json.load(file)
-                    expiration_timestamp = data["expires_on"]
-                    expiration_date_utc = datetime.fromtimestamp(expiration_timestamp, tz=timezone.utc)
-                    if datetime.now(timezone.utc) < expiration_date_utc:
-                        token = data["token"]
-                        eastern = pytz.timezone("US/Eastern")
-                        expiration_date_et = expiration_date_utc.astimezone(eastern)
-                        return token, expiration_date_et
-            except (KeyError, json.JSONDecodeError, ValueError) as e:
-                print(f"Error reading token file: {e}")
-        return None, None
-
-    def get_file_system_client(self, token_credential: DefaultAzureCredential) -> FileSystemClient:
+    def get_interactive_browser_token(scope: str, token_file: str) -> str:
         """
-        Get the file system client for OneLake storage.
+        Retrieves or generates an interactive browser token for authentication with Microsoft Fabric services.
+
+        This function manages the lifecycle of the interactive browser token, including caching, 
+        refreshing, and storing the token. It attempts to load a cached token from a file, and 
+        if the token is expired or not found, it generates a new one using an interactive browser flow.
 
         Args:
-            token_credential (DefaultAzureCredential): The Azure credential.
+            scope (str): The scope for which the token is requested, typically a URL representing 
+                        the resource you're accessing.
+            token_file (str): The path to the file where the token will be cached.
 
         Returns:
-            FileSystemClient: The file system client for OneLake storage.
+            str: A valid interactive browser token that can be used for authentication.
+
+        Note:
+            This function handles token caching, refreshing, and conversion between UTC and 
+            Eastern Time internally. It uses InteractiveBrowserCredential for new token acquisition, 
+            which may prompt the user to log in through a web browser if necessary.
+        """
+        def _convert_to_eastern_time(timestamp: int) -> datetime:
+            utc_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+            eastern = pytz.timezone("US/Eastern")
+            return utc_time.astimezone(eastern)
+
+        def _save_token_to_file(token: str, expiration_timestamp: int):
+            with open(token_file, "w") as file:
+                json.dump({"token": token, "expires_on": expiration_timestamp}, file)
+            print(f"Token and expiration date saved to {token_file}")
+
+        def _load_token_from_file() -> tuple:
+            if os.path.exists(token_file):
+                try:
+                    with open(token_file, "r") as file:
+                        data = json.load(file)
+                        expiration_date = _convert_to_eastern_time(data["expires_on"])
+                        if datetime.now(timezone.utc) < expiration_date:
+                            return data["token"], expiration_date
+                except (KeyError, json.JSONDecodeError, ValueError) as e:
+                    print(f"Error reading token file: {e}")
+            return None, None
+
+        def _get_new_token() -> tuple:
+            credential = InteractiveBrowserCredential(cache_persistence_options=TokenCachePersistenceOptions())
+            access_token = credential.get_token(scope)
+            expiration_date = _convert_to_eastern_time(access_token.expires_on)
+            _save_token_to_file(access_token.token, access_token.expires_on)
+            return access_token.token, expiration_date
+
+        token, expiration_date = _load_token_from_file()
+        if not token or datetime.now(timezone.utc) >= expiration_date - timedelta(minutes=5):
+            print("Fetching a new token...")
+            token, expiration_date = _get_new_token()
+        else:
+            print("Using cached token...")
+        print(f"Token expires on (Eastern Time): {expiration_date}")
+        return token
+
+    def get_file_system_client(token_credential: DefaultAzureCredential, account_name: str, workspace_id: str) -> FileSystemClient:
+        """
+        Creates and returns a FileSystemClient for interacting with Microsoft Fabric's OneLake storage.
+
+        This function sets up a client that can be used to perform operations on the file system 
+        within a specific Fabric workspace.
+
+        Args:
+            token_credential (get_service_principal_token() or get_interactive_browser_token()): The credential object used for authentication.
+            account_name (str): The name of the storage account.
+            workspace_id (str): The ID of the Fabric workspace.
+
+        Returns:
+            FileSystemClient: A client object that can be used to interact with the file system 
+                            in the specified Fabric workspace.
+
+        Note:
+            This client can be used for operations like creating directories, uploading files, 
+            and managing access control within the OneLake storage of the specified workspace.
         """
         return DataLakeServiceClient(
-            f"https://{self.account_name}.dfs.fabric.microsoft.com",
+            f"https://{account_name}.dfs.fabric.microsoft.com",
             credential=token_credential
-        ).get_file_system_client(self.workspace_id)
+        ).get_file_system_client(workspace_id)
 
 class OneLakeUtils:
-    """
-    A class to handle various operations on OneLake storage, including authentication,
-    file system operations, uploads, downloads, listings, and deletions.
-    """
 
-    def __init__(self):
-        self.workspace_id = os.getenv("WORKSPACE_ID")
-        self.lakehouse_id = os.getenv("LAKEHOUSE_ID")
-        self.organization_url = os.getenv("ORGANIZATIONAL_URL")
-        self.personal_access_token = os.getenv("PERSONAL_ACCESS_TOKEN")
-        self.project_name = os.getenv("PROJECT_NAME")
-        self.repo_name = os.getenv("REPO_NAME")
-        self.github_token = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
-        self.github_username = os.getenv("GITHUB_USERNAME")
-
-    def get_azure_repo_connection(self) -> Connection:
+    def get_azure_repo_connection(organization_url: str, personal_access_token: str) -> Connection:
         """
-        Get the connection to Azure DevOps repository.
+        Create a connection to an Azure DevOps repository.
+
+        Args:
+            organization_url (str): The URL of the Azure DevOps organization.
+            personal_access_token (str): The personal access token for authentication.
 
         Returns:
-            Connection: The connection to Azure DevOps repository.
+            Connection: An authenticated connection to the Azure DevOps repository.
         """
-        return Connection(base_url=self.organization_url, creds=BasicAuthentication('', self.personal_access_token))
+        return Connection(base_url=organization_url, creds=BasicAuthentication('', personal_access_token))
 
-    def upload_file(self, file_client: DataLakeFileClient, local_path: str, relative_path: str) -> Tuple[bool, str]:
+    def upload_file(file_client: DataLakeFileClient, local_path: str, relative_path: str) -> Tuple[bool, str]:
         """
         Upload a single file to OneLake storage.
 
@@ -143,10 +154,8 @@ class OneLakeUtils:
 
             with open(local_path, "rb") as file:
                 if file_size <= chunk_size:
-                    # For small files, upload in one go
                     file_client.upload_data(file.read(), overwrite=True)
                 else:
-                    # For larger files, upload in chunks
                     file_client.create_file()
                     for i in range(0, file_size, chunk_size):
                         chunk = file.read(chunk_size)
@@ -157,7 +166,7 @@ class OneLakeUtils:
         except Exception as error:
             return False, f"Error uploading '{relative_path}': {str(error)}"
 
-    def upload_folder(self, file_system_client: FileSystemClient, source: str, target: str, verbose: bool = True) -> None:
+    def upload_folder(file_system_client: FileSystemClient, source: str, target: str, lakehouse_id: str, verbose: bool = True) -> None:
         """
         Upload a folder to OneLake storage.
 
@@ -165,6 +174,7 @@ class OneLakeUtils:
             file_system_client (FileSystemClient): The file system client for OneLake storage.
             source (str): The local source folder path.
             target (str): The target path in OneLake storage.
+            lakehouse_id (str): The ID of the lakehouse.
             verbose (bool, optional): Whether to print verbose output. Defaults to True.
         """
         try:
@@ -182,8 +192,8 @@ class OneLakeUtils:
             with ThreadPoolExecutor(max_workers=10) as executor:
                 future_to_file = {
                     executor.submit(
-                        self.upload_file,
-                        file_system_client.get_file_client(f"{self.lakehouse_id}/{os.path.join(target, relative_path)}"),
+                        OneLakeUtils.upload_file,
+                        file_system_client.get_file_client(f"{lakehouse_id}/{os.path.join(target, relative_path)}"),
                         local_path,
                         relative_path
                     ): (local_path, relative_path) for local_path, relative_path in files_to_upload
@@ -207,16 +217,17 @@ class OneLakeUtils:
         except Exception as error:
             print(f"Error uploading to '{target}': {error}")
 
-    def upload_github_repo(self, file_system_client: FileSystemClient, repo_url: str, target_path: str, folder_path: str = None) -> None:
+    def upload_github_repo(file_system_client: FileSystemClient, repo_url: str, target_path: str, lakehouse_id: str, folder_path: str = None) -> None:
         """
-        Upload an entire GitHub repository or a specific folder to OneLake storage.
+        Upload a public GitHub repository to OneLake storage.
 
         Args:
             file_system_client (FileSystemClient): The file system client for OneLake storage.
             repo_url (str): The URL of the GitHub repository.
             target_path (str): The target path in OneLake storage.
+            lakehouse_id (str): The ID of the lakehouse.
             folder_path (str, optional): The specific folder within the repository to upload. If None, uploads the entire repository.
-        """
+        """ 
         try:
             parts = repo_url.rstrip('/').split('/')
             owner, repo = parts[-2], parts[-1]
@@ -247,9 +258,9 @@ class OneLakeUtils:
             with ThreadPoolExecutor(max_workers=10) as executor:
                 futures = []
                 for relative_path, content in files_to_upload:
-                    full_path = f"{self.lakehouse_id}/{target_path}/{relative_path}"
+                    full_path = f"{lakehouse_id}/{target_path}/{relative_path}"
                     file_client = file_system_client.get_file_client(full_path)
-                    futures.append(executor.submit(self._upload_file, file_client, content, relative_path))
+                    futures.append(executor.submit(OneLakeUtils._upload_file, file_client, content, relative_path))
 
                 uploaded_count = 0
                 for future in as_completed(futures):
@@ -263,21 +274,24 @@ class OneLakeUtils:
             print(f"Failed to download repository: {str(e)}")
         except Exception as e:
             print(f"Failed to upload {source_description}: {str(e)}")
-        
-    def upload_private_github_repo(self, file_system_client: FileSystemClient, repo_name: str, target_path: str, folder_path: str = None) -> None:
+
+    def upload_private_github_repo(file_system_client: FileSystemClient, repo_name: str, target_path: str, lakehouse_id: str, github_token: str, github_username: str, folder_path: str = None) -> None:
         """
-        Upload a private GitHub repository or a specific folder to OneLake storage.
+        Upload a private GitHub repository to OneLake storage.
 
         Args:
             file_system_client (FileSystemClient): The file system client for OneLake storage.
             repo_name (str): The name of the private GitHub repository.
             target_path (str): The target path in OneLake storage.
+            lakehouse_id (str): The ID of the lakehouse.
+            github_token (str): The GitHub personal access token.
+            github_username (str): The GitHub username.
             folder_path (str, optional): The specific folder within the repository to upload. If None, uploads the entire repository.
         """
         try:
-            api_url = f"https://api.github.com/repos/{self.github_username}/{repo_name}/zipball"
+            api_url = f"https://api.github.com/repos/{github_username}/{repo_name}/zipball"
             headers = {
-                "Authorization": f"token {self.github_token}",
+                "Authorization": f"token {github_token}",
                 "Accept": "application/vnd.github.v3+json"
             }
             response = requests.get(api_url, headers=headers)
@@ -303,9 +317,9 @@ class OneLakeUtils:
             with ThreadPoolExecutor(max_workers=10) as executor:
                 futures = []
                 for relative_path, content in files_to_upload:
-                    full_path = f"{self.lakehouse_id}/{target_path}/{relative_path}"
+                    full_path = f"{lakehouse_id}/{target_path}/{relative_path}"
                     file_client = file_system_client.get_file_client(full_path)
-                    futures.append(executor.submit(self._upload_file, file_client, content, relative_path))
+                    futures.append(executor.submit(OneLakeUtils._upload_file, file_client, content, relative_path))
 
                 uploaded_count = 0
                 for future in as_completed(futures):
@@ -319,7 +333,7 @@ class OneLakeUtils:
         except Exception as e:
             print(f"Failed to upload {source_description}: {str(e)}")
 
-    def _upload_file(self, file_client, content, file_name):
+    def _upload_file(file_client, content, file_name):
         """
         Helper method to upload a single file.
 
@@ -337,20 +351,23 @@ class OneLakeUtils:
         except Exception as e:
             print(f"Error uploading {file_name}: {str(e)}")
             return None
-
-    def upload_azure_devops_repo(self, file_system_client: FileSystemClient, project_name: str, repo_name: str, target_path: str, folder_path: str = None) -> None:
+    
+    def upload_azure_devops_repo(file_system_client: FileSystemClient, project_name: str, repo_name: str, target_path: str, lakehouse_id: str, organization_url: str, personal_access_token: str, folder_path: str = None) -> None:
         """
-        Upload an entire Azure DevOps repository or a specific folder to OneLake storage.
+        Upload an Azure DevOps repository to OneLake storage.
 
         Args:
             file_system_client (FileSystemClient): The file system client for OneLake storage.
             project_name (str): The name of the Azure DevOps project.
             repo_name (str): The name of the Azure DevOps repository.
             target_path (str): The target path in OneLake storage.
+            lakehouse_id (str): The ID of the lakehouse.
+            organization_url (str): The URL of the Azure DevOps organization.
+            personal_access_token (str): The personal access token for authentication.
             folder_path (str, optional): The specific folder within the repository to upload. If None, uploads the entire repository.
         """
         try:
-            connection = self.get_azure_repo_connection()
+            connection = OneLakeUtils.get_azure_repo_connection(organization_url, personal_access_token)
             git_client = connection.clients.get_git_client()
 
             repository = git_client.get_repository(repo_name, project_name)
@@ -378,7 +395,7 @@ class OneLakeUtils:
                     relative_path = item.path.lstrip('/')
                     if folder_path:
                         relative_path = relative_path[len(folder_path.lstrip('/')):]
-                    full_path = f"{self.lakehouse_id}/{target_path}/{relative_path}"
+                    full_path = f"{lakehouse_id}/{target_path}/{relative_path}"
 
                     file_client = file_system_client.get_file_client(full_path)
                     file_client.upload_data(content_bytes, overwrite=True)
@@ -396,34 +413,55 @@ class OneLakeUtils:
         except Exception as e:
             print(f"Failed to upload {source_description}: {str(e)}")
 
-    def read_file_from_repo(self, connection: Connection, file_path: str) -> Generator[bytes, None, None]:
+    def read_file_from_repo(connection: Connection, file_path: str, project_name: str, repo_name: str) -> Generator[bytes, None, None]:
         """
-        Read the file content from the Azure DevOps repository.
+        Read a file from an Azure DevOps repository.
 
         Args:
             connection (Connection): The Azure DevOps connection.
             file_path (str): The path of the file in the repository.
+            project_name (str): The name of the Azure DevOps project.
+            repo_name (str): The name of the Azure DevOps repository.
 
         Returns:
             Generator[bytes, None, None]: A generator yielding the file content in chunks.
         """
         git_client = connection.clients.get_git_client()
-        repository = git_client.get_repository(self.repo_name, self.project_name)
+        repository = git_client.get_repository(repo_name, project_name)
         return git_client.get_item_content(repository.id, path=file_path)
         
-    def write_to_lakehouse(self, file_system_client: FileSystemClient, target_path: str, upload_from: str, source_path: str = "", connection: Union[Connection, None] = None, folder_path: str = None, project_name: str = None, repo_name: str = None) -> None:
+    def write_to_lakehouse(file_system_client: FileSystemClient, target_path: str, upload_from: str, lakehouse_id: str, source_path: str = "", connection: Union[Connection, None] = None, folder_path: str = None, project_name: str = None, repo_name: str = None, organization_url: str = None, personal_access_token: str = None, github_token: str = None, github_username: str = None) -> None:
         """
         Write data to the lakehouse from various sources.
 
+        This method supports uploading data from local files/folders, Git repositories, GitHub (public and private),
+        and Azure DevOps repositories to a specified location in the OneLake storage.
+
         Args:
             file_system_client (FileSystemClient): The file system client for OneLake storage.
-            target_path (str): The target path in OneLake storage.
-            upload_from (str): The source type ('local', 'git', 'github', 'github_private', or 'azure_devops').
-            source_path (str, optional): The source path for local or git uploads.
-            connection (Union[Connection, None], optional): The connection for git uploads.
-            folder_path (str, optional): The specific folder to upload for GitHub or Azure DevOps repositories.
-            project_name (str, optional): The project name for Azure DevOps uploads.
-            repo_name (str, optional): The repository name for GitHub private or Azure DevOps uploads.
+            target_path (str): The target path in OneLake storage where the data will be written.
+            upload_from (str): The source type. Valid values are "local", "git", "github", "github_private", or "azure_devops".
+            lakehouse_id (str): The ID of the lakehouse.
+            source_path (str, optional): The source path for local or git uploads. Defaults to "".
+            connection (Union[Connection, None], optional): The connection object for git uploads. Defaults to None.
+            folder_path (str, optional): The specific folder to upload for GitHub or Azure DevOps repositories. Defaults to None.
+            project_name (str, optional): The project name for Azure DevOps uploads. Defaults to None.
+            repo_name (str, optional): The repository name for GitHub private or Azure DevOps uploads. Defaults to None.
+            organization_url (str, optional): The organization URL for Azure DevOps uploads. Defaults to None.
+            personal_access_token (str, optional): The personal access token for Azure DevOps authentication. Defaults to None.
+            github_token (str, optional): The GitHub personal access token for private repository access. Defaults to None.
+            github_username (str, optional): The GitHub username for private repository access. Defaults to None.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If an invalid upload_from value is provided or if required parameters are missing.
+
+        Note:
+            - For local uploads, if the source_path is a directory and target_path is "Tables/", it will attempt to upload multiple tables.
+            - For git uploads, a valid connection object must be provided.
+            - For GitHub private and Azure DevOps uploads, appropriate credentials must be provided.
         """
         if upload_from == "local":
             if os.path.isdir(source_path):
@@ -436,57 +474,56 @@ class OneLakeUtils:
                             table_path = os.path.join(source_path, table_name)
                             if os.path.isdir(table_path):
                                 print(f"Processing table: {table_name}")
-                                futures.append(executor.submit(self.upload_folder, file_system_client, table_path, f"{target_path}{table_name}", verbose=False))
+                                futures.append(executor.submit(OneLakeUtils.upload_folder, file_system_client, table_path, f"{target_path}{table_name}", lakehouse_id, verbose=False))
                         for future in as_completed(futures):
                             future.result()
                 else:
                     source_description = "local Delta Table" if target_path.startswith("Tables/") else "local folder"
                     print(f"Uploading {source_description} '{source_path}' to '{target_path}'")
-                    self.upload_folder(file_system_client, source_path, target_path, verbose=False)
+                    OneLakeUtils.upload_folder(file_system_client, source_path, target_path, lakehouse_id, verbose=False)
             elif os.path.isfile(source_path):
-                data_path = f"{self.lakehouse_id}/{target_path}"
+                data_path = f"{lakehouse_id}/{target_path}"
                 file_client = file_system_client.get_file_client(data_path)
                 print(f"Uploading local file '{source_path}' to '{target_path}'")
-                self.upload_file(file_client, source_path, os.path.basename(source_path))
+                OneLakeUtils.upload_file(file_client, source_path, os.path.basename(source_path))
             else:
                 print(f"Invalid source path: '{source_path}'")
         elif upload_from == "git" and connection:
-            data_path = f"{self.lakehouse_id}/{target_path}"
+            data_path = f"{lakehouse_id}/{target_path}"
             file_client = file_system_client.get_file_client(data_path)
             print(f"Uploading from git '{source_path}' to '{target_path}'")
-            file_content = self.read_file_from_repo(connection, source_path)
+            file_content = OneLakeUtils.read_file_from_repo(connection, source_path, project_name, repo_name)
             content_str = "".join([chunk.decode('utf-8') for chunk in file_content])
             file_client.upload_data(content_str, overwrite=True)
         elif upload_from == "github":
             print(f"Uploading from GitHub '{source_path}' to '{target_path}'")
-            self.upload_github_repo(file_system_client, source_path, target_path, folder_path)
+            OneLakeUtils.upload_github_repo(file_system_client, source_path, target_path, lakehouse_id, folder_path)
         elif upload_from == "github_private":
             if not repo_name:
                 repo_name = os.getenv("GITHUB_REPO_NAME")
-            self.upload_private_github_repo(file_system_client, repo_name, target_path, folder_path)
+            OneLakeUtils.upload_private_github_repo(file_system_client, repo_name, target_path, lakehouse_id, github_token, github_username, folder_path)
         elif upload_from == "azure_devops":
             if not project_name or not repo_name:
                 project_name = os.getenv("PROJECT_NAME")
                 repo_name = os.getenv("REPO_NAME")
-            self.upload_azure_devops_repo(file_system_client, project_name, repo_name, target_path, folder_path)
+            OneLakeUtils.upload_azure_devops_repo(file_system_client, project_name, repo_name, target_path, lakehouse_id, organization_url, personal_access_token, folder_path)
         else:
             print(f"Invalid upload_from value: '{upload_from}' or missing connection")
 
-    def download_from_lakehouse(self, file_system_client: FileSystemClient, target_file_path: str) -> str:
+    def download_from_lakehouse(file_system_client: FileSystemClient, target_file_path: str, lakehouse_id: str) -> str:
         """
-        Download a file or folder from OneLake storage to the current directory, preserving the directory structure.
+        Download a file or folder from OneLake storage to the current directory.
 
         Args:
             file_system_client (FileSystemClient): The file system client for OneLake storage.
             target_file_path (str): The target file or folder path in OneLake storage.
+            lakehouse_id (str): The ID of the lakehouse.
 
         Returns:
             str: The local path of the downloaded file or folder.
         """
-        lakehouse_path = f"{self.lakehouse_id}/{target_file_path}"
-        local_base_path = os.getcwd()  # Get the current working directory
-        
-        # Create the local directory structure
+        lakehouse_path = f"{lakehouse_id}/{target_file_path}"
+        local_base_path = os.getcwd()
         local_path = os.path.join(local_base_path, target_file_path)
         os.makedirs(local_path, exist_ok=True)
 
@@ -498,29 +535,27 @@ class OneLakeUtils:
                 return local_path
 
             if len(paths) == 1 and not paths[0].is_directory:
-                # Single file download
                 file_name = os.path.basename(paths[0].name)
                 local_file_path = os.path.join(local_path, file_name)
                 file_client = file_system_client.get_file_client(paths[0].name)
-                self.download_file(file_client, local_file_path)
+                OneLakeUtils.download_file(file_client, local_file_path)
                 print(f"Downloaded file: {local_file_path}")
             else:
-                # Folder download
                 print(f"Downloading folder '{target_file_path}' from lakehouse")
-                self.download_folder(file_system_client, lakehouse_path, local_path)
+                OneLakeUtils.download_folder(file_system_client, lakehouse_path, local_path)
 
         except Exception as e:
             print(f"Error downloading '{target_file_path}': {str(e)}")
 
         return os.path.abspath(local_path)
 
-    def download_from_lakehouse_temp(self, file_system_client, source_path: str, lakehouse_id: str) -> str:
+    def download_from_lakehouse_temp(file_system_client, source_path: str, lakehouse_id: str) -> str:
         """
-        Download a file from the lakehouse to a temporary location.
+        Download a file from OneLake storage to a temporary location.
 
         Args:
-            file_system_client: The file system client for the lakehouse.
-            source_path (str): The path of the file in the lakehouse.
+            file_system_client: The file system client for OneLake storage.
+            source_path (str): The source path of the file in OneLake storage.
             lakehouse_id (str): The ID of the lakehouse.
 
         Returns:
@@ -531,11 +566,9 @@ class OneLakeUtils:
         try:
             file_client = file_system_client.get_file_client(lakehouse_path)
             
-            # Create a temporary file
             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".ipynb")
             temp_file_path = temp_file.name
             
-            # Download the file content
             with open(temp_file_path, "wb") as file_handle:
                 download = file_client.download_file()
                 download.readinto(file_handle)
@@ -546,10 +579,10 @@ class OneLakeUtils:
         except Exception as e:
             print(f"Error downloading file from '{source_path}': {str(e)}")
             return None
-        
-    def download_folder(self, directory_client: FileSystemClient, lakehouse_dir_path: str, local_dir_path: str) -> None:
+
+    def download_folder(directory_client: FileSystemClient, lakehouse_dir_path: str, local_dir_path: str) -> None:
         """
-        Download a folder from OneLake storage, preserving the directory structure.
+        Download a folder from OneLake storage.
 
         Args:
             directory_client (FileSystemClient): The file system client for OneLake storage.
@@ -577,7 +610,7 @@ class OneLakeUtils:
         start_time = time.time()
 
         with ThreadPoolExecutor(max_workers=10) as executor:
-            future_to_file = {executor.submit(self.download_file, directory_client.get_file_client(lakehouse_path), local_path): (lakehouse_path, local_path) for lakehouse_path, local_path in files_to_download}
+            future_to_file = {executor.submit(OneLakeUtils.download_file, directory_client.get_file_client(lakehouse_path), local_path): (lakehouse_path, local_path) for lakehouse_path, local_path in files_to_download}
             
             for future in as_completed(future_to_file):
                 lakehouse_path, local_path = future_to_file[future]
@@ -590,13 +623,12 @@ class OneLakeUtils:
                 except Exception as exc:
                     print(f"Error downloading {lakehouse_path}: {exc}")
 
-        # Check for any files that didn't download and retry them individually
         remaining_files = [f for f in files_to_download if not os.path.exists(f[1])]
         if remaining_files:
             print(f"Attempting to download {len(remaining_files)} remaining files...")
             for lakehouse_path, local_path in remaining_files:
                 try:
-                    self.download_file(directory_client.get_file_client(lakehouse_path), local_path)
+                    OneLakeUtils.download_file(directory_client.get_file_client(lakehouse_path), local_path)
                     print(f"Successfully downloaded: {lakehouse_path}")
                     completed += 1
                 except Exception as exc:
@@ -607,9 +639,9 @@ class OneLakeUtils:
         if completed < total_files:
             print(f"{total_files - completed} files failed to download.")
 
-    def download_file(self, file_client: DataLakeFileClient, local_path: str) -> None:
+    def download_file(file_client: DataLakeFileClient, local_path: str) -> None:
         """
-        Download a file from OneLake storage.
+        Download a single file from OneLake storage.
 
         Args:
             file_client (DataLakeFileClient): The file client for the source file.
@@ -619,35 +651,38 @@ class OneLakeUtils:
             download = file_client.download_file()
             download.readinto(file_handle)
 
-    def read_delta_from_fabric_lakehouse(self, file_system_client: FileSystemClient, target_file_path: str) -> Optional[str]:
+    
+    def read_delta_from_fabric_lakehouse(file_system_client: FileSystemClient, target_file_path: str, lakehouse_id: str) -> Optional[str]:
         """
         Download a delta table from OneLake storage and return the local path.
 
         Args:
             file_system_client (FileSystemClient): The file system client for OneLake storage.
             target_file_path (str): The target file or folder path in OneLake storage.
+            lakehouse_id (str): The ID of the lakehouse.
 
         Returns:
             Optional[str]: The local path of the downloaded delta table, or None if download failed.
         """
-        lakehouse_path = f"{self.lakehouse_id}/{target_file_path}"
+        lakehouse_path = f"{lakehouse_id}/{target_file_path}"
         paths = file_system_client.get_paths(path=lakehouse_path)
         if any(path.is_directory for path in paths) and target_file_path.startswith('Tables'):
             print(f"Downloading folder '{target_file_path}' from lakehouse")
             local_dir_path = os.path.join(os.path.expanduser("~"), "Downloads", target_file_path)
-            self.download_folder(file_system_client, lakehouse_path, local_dir_path)
+            OneLakeUtils.download_folder(file_system_client, lakehouse_path, local_dir_path)
             return local_dir_path
         else:
             print(f"[E] Invalid path or not a Tables directory: '{target_file_path}'")
             return None
 
-    def list_items(self, file_system_client: FileSystemClient, target_directory_path: str, print_output: bool = False) -> Optional[List[str]]:
+    def list_items(file_system_client: FileSystemClient, target_directory_path: str, lakehouse_id: str, print_output: bool = False) -> Optional[List[str]]:
         """
         List items in a directory in OneLake storage.
 
         Args:
             file_system_client (FileSystemClient): The file system client for OneLake storage.
             target_directory_path (str): The target directory path in OneLake storage.
+            lakehouse_id (str): The ID of the lakehouse.
             print_output (bool, optional): Whether to print the output. Defaults to False.
 
         Returns:
@@ -655,7 +690,7 @@ class OneLakeUtils:
         """
         filtered_names = []
         try:
-            lakehouse_path = f"{self.lakehouse_id}/{target_directory_path}"
+            lakehouse_path = f"{lakehouse_id}/{target_directory_path}"
             paths = file_system_client.get_paths(path=lakehouse_path)
             for path in paths:
                 name = path.name.split('/')[-1]
@@ -667,17 +702,18 @@ class OneLakeUtils:
             print(f"[E] Error listing items: {error}")
 
         if print_output:
-            self.list_files(file_system_client, target_directory_path, is_tables=(target_directory_path == "Tables"))
+            OneLakeUtils.list_files(file_system_client, target_directory_path, lakehouse_id, is_tables=(target_directory_path == "Tables"))
             return None
         return filtered_names
 
-    def list_files(self, file_system_client: FileSystemClient, target_file_path: str, indent: str = "", printed_directories: set = None, printed_files: set = None, first_call: bool = True, is_tables: bool = False) -> None:
+    def list_files(file_system_client: FileSystemClient, target_file_path: str, lakehouse_id: str, indent: str = "", printed_directories: set = None, printed_files: set = None, first_call: bool = True, is_tables: bool = False) -> None:
         """
         List files and directories in OneLake storage.
 
         Args:
             file_system_client (FileSystemClient): The file system client for OneLake storage.
             target_file_path (str): The target file or directory path in OneLake storage.
+            lakehouse_id (str): The ID of the lakehouse.
             indent (str, optional): The indentation for the output. Defaults to "".
             printed_directories (set, optional): Set of already printed directories. Defaults to None.
             printed_files (set, optional): Set of already printed files. Defaults to None.
@@ -694,7 +730,7 @@ class OneLakeUtils:
             first_call = False
 
         try:
-            lakehouse_path = f"{self.lakehouse_id}/{target_file_path}"
+            lakehouse_path = f"{lakehouse_id}/{target_file_path}"
             paths = file_system_client.get_paths(path=lakehouse_path)
 
             for path in paths:
@@ -703,14 +739,14 @@ class OneLakeUtils:
                     if path.is_directory:
                         print(f"{indent}└── {name}/")
                         printed_directories.add(name)
-                        self.list_files(file_system_client, f"{target_file_path}/{name}", indent + "    ", printed_directories, printed_files, first_call=False, is_tables=is_tables)
+                        OneLakeUtils.list_files(file_system_client, f"{target_file_path}/{name}", lakehouse_id, indent + "    ", printed_directories, printed_files, first_call=False, is_tables=is_tables)
                     elif not is_tables or target_file_path != "Tables":
                         print(f"{indent}{'    ' if is_tables else ''}└── {name}")
                         printed_files.add(name)
         except Exception as error:
             print(f"[E] Error listing files: {error}")
 
-    def delete_local_path(self, path: str) -> None:
+    def delete_local_path(path: str) -> None:
         """
         Delete a local file or directory.
 
@@ -728,102 +764,106 @@ class OneLakeUtils:
         except Exception as error:
             print(f"Error deleting local path '{path}': {error}")
 
-    def delete_file(self, file_system_client: FileSystemClient, lakehouse_dir_path: str) -> None:
+    def delete_file(file_system_client: FileSystemClient, lakehouse_dir_path: str, lakehouse_id: str) -> None:
         """
         Delete a file, table, or folder from OneLake storage.
 
         Args:
             file_system_client (FileSystemClient): The file system client for OneLake storage.
             lakehouse_dir_path (str): The path of the file, table, or folder to delete in OneLake storage.
+            lakehouse_id (str): The ID of the lakehouse.
         """
-        full_path = f"{self.lakehouse_id}/{lakehouse_dir_path}"
+        full_path = f"{lakehouse_id}/{lakehouse_dir_path}"
         try:
             if lakehouse_dir_path == "Tables/":
-                self.delete_all_tables(file_system_client)
+                OneLakeUtils.delete_all_tables(file_system_client, lakehouse_id)
             elif lakehouse_dir_path.startswith("Tables/"):
-                # Single table deletion
                 table_name = lakehouse_dir_path.split('/')[-1]
-                self.delete_table(file_system_client, table_name)
+                OneLakeUtils.delete_table(file_system_client, table_name, lakehouse_id)
             elif lakehouse_dir_path == "Files/":
-                self.delete_all_files(file_system_client)
+                OneLakeUtils.delete_all_files(file_system_client, lakehouse_id)
             else:
-                # General file or directory deletion
-                self.delete_path(file_system_client, full_path)
+                OneLakeUtils.delete_path(file_system_client, full_path)
         except Exception as e:
             print(f"Error processing '{lakehouse_dir_path}': {str(e)}")
-
-    def delete_table(self, file_system_client: FileSystemClient, table_name: str) -> None:
+    
+    def delete_table(file_system_client: FileSystemClient, table_name: str, lakehouse_id: str) -> None:
         """
-        Delete a single table from the Tables directory.
+        Delete a single table from the Tables directory in OneLake storage.
 
         Args:
             file_system_client (FileSystemClient): The file system client for OneLake storage.
             table_name (str): The name of the table to delete.
+            lakehouse_id (str): The ID of the lakehouse.
         """
-        table_path = f"{self.lakehouse_id}/Tables/{table_name}"
+        table_path = f"{lakehouse_id}/Tables/{table_name}"
         try:
             if file_system_client.get_directory_client(table_path).exists():
                 file_system_client.delete_directory(table_path)
                 print(f"Deleted table: Tables/{table_name}")
             else:
-                # Instead of printing, we'll just pass silently
                 pass
         except Exception as e:
             print(f"Error deleting table 'Tables/{table_name}': {str(e)}")
-
-    def delete_all_tables(self, file_system_client: FileSystemClient) -> None:
+    
+    def delete_all_tables(file_system_client: FileSystemClient, lakehouse_id: str) -> None:
         """
-        Delete all tables in the Tables directory.
+        Delete all tables in the Tables directory in OneLake storage.
 
         Args:
             file_system_client (FileSystemClient): The file system client for OneLake storage.
+            lakehouse_id (str): The ID of the lakehouse.
         """
-        tables_path = f"{self.lakehouse_id}/Tables"
+        tables_path = f"{lakehouse_id}/Tables"
         try:
             paths = list(file_system_client.get_paths(path=tables_path))
             for path in paths:
                 if path.is_directory and not path.name.endswith('_delta_log'):
                     table_name = path.name.split('/')[-1]
-                    self.delete_table(file_system_client, table_name)
+                    OneLakeUtils.delete_table(file_system_client, table_name, lakehouse_id)
         except Exception as e:
             print(f"Error listing tables: {str(e)}")
-
-    def delete_all_files(self, file_system_client: FileSystemClient) -> None:
+    
+    def delete_all_files(file_system_client: FileSystemClient, lakehouse_id: str) -> None:
         """
-        Delete all files and directories under the 'Files/' directory.
+        Delete all files and directories under the 'Files/' directory in OneLake storage.
 
         Args:
             file_system_client (FileSystemClient): The file system client for OneLake storage.
+            lakehouse_id (str): The ID of the lakehouse.
         """
-        files_path = f"{self.lakehouse_id}/Files"
+        files_path = f"{lakehouse_id}/Files"
         try:
             paths = list(file_system_client.get_paths(path=files_path, recursive=False))
             for path in paths:
-                self.delete_path(file_system_client, path.name)
+                OneLakeUtils.delete_path(file_system_client, path.name)
         except Exception as e:
             print(f"Error accessing 'Files/' directory: {str(e)}")
-
-    def delete_path(self, file_system_client: FileSystemClient, full_path: str) -> None:
+    
+    def delete_path(file_system_client: FileSystemClient, full_path: str) -> None:
         """
-        Delete a file or directory.
+        Delete a file or directory from OneLake storage.
 
         Args:
             file_system_client (FileSystemClient): The file system client for OneLake storage.
             full_path (str): The full path of the file or directory to delete.
+
+        Returns:
+            None
         """
         try:
             if file_system_client.get_directory_client(full_path).exists():
                 file_system_client.delete_directory(full_path)
-                print(f"Deleted directory: {full_path.replace(self.lakehouse_id + '/', '')}")
+                print(f"Deleted directory: {full_path.split('/', 1)[1]}")
             elif file_system_client.get_file_client(full_path).exists():
                 file_system_client.get_file_client(full_path).delete_file()
-                print(f"Deleted file: {full_path.replace(self.lakehouse_id + '/', '')}")
+                print(f"Deleted file: {full_path.split('/', 1)[1]}")
             else:
-                pass
+                print(f"Path not found: {full_path.split('/', 1)[1]}")
         except ResourceNotFoundError:
-            pass
+            print(f"Resource not found: {full_path.split('/', 1)[1]}")
         except Exception as e:
-            print(f"Error deleting '{full_path.replace(self.lakehouse_id + '/', '')}': {str(e)}")
+            print(f"Error deleting '{full_path.split('/', 1)[1]}': {str(e)}")
 
 class FabricAPIs:
     """
