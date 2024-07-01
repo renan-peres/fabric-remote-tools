@@ -1,3 +1,4 @@
 .env
 __pycache__/
 fabric_remote_tools/
+setup.py
