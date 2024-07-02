@@ -5,6 +5,8 @@ This repo provides a set of Python scripts for working with Microsoft Fabric and
 The project provides a comprehensive solution for managing **Tables** and **Files** from a Lakehouse in Microsoft Fabric OneLake using the [azure-identity](https://pypi.org/project/azure-identity/) and [azure-storage-file-datalake](https://pypi.org/project/azure-storage-file-datalake/) Python SDKs.
 
 ### References
+
+The purpose of this project is not to compente but only compile the amazing documentation that has already been published can be found in following sources:
 - Microsoft Documentation: [Use Python to manage files and folders in Microsoft OneLake](https://learn.microsoft.com/en-us/fabric/onelake/onelake-access-python)
 - GitHub: [Azure-Samples/modern-data-warehouse-dataops/single_tech_samples/fabric/fabric_ci_cd](https://github.com/Azure-Samples/modern-data-warehouse-dataops/tree/main/single_tech_samples/fabric/fabric_ci_cd)
 - GitHub: [microsoft/semantic-link-labs](https://github.com/microsoft/semantic-link-labs/)
