@@ -4,3 +4,4 @@ fabric_remote_tools/
 setup.py
 **token_store.json
 dist/
+fabric_remote_tools.egg-info/
