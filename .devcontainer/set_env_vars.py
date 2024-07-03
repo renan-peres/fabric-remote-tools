@@ -13,15 +13,15 @@ secrets = {
     'LAKEHOUSE_NAME': os.getenv('LAKEHOUSE_NAME'),
     
     # Azure DevOps details and personal access token (PAT)
-    'PERSONAL_ACCESS_TOKEN': os.getenv('PERSONAL_ACCESS_TOKEN'),
-    'ORGANIZATIONAL_URL': os.getenv('ORGANIZATIONAL_URL'),
-    'PROJECT_NAME': os.getenv('PROJECT_NAME'),
-    'REPO_NAME': os.getenv('REPO_NAME'),
+    'ADO_PERSONAL_ACCESS_TOKEN': os.getenv('ADO_PERSONAL_ACCESS_TOKEN'),
+    'ADO_ORGANIZATIONAL_URL': os.getenv('ADO_ORGANIZATIONAL_URL'),
+    'ADO_PROJECT_NAME': os.getenv('ADO_PROJECT_NAME'),
+    'ADO_REPO_NAME': os.getenv('ADO_REPO_NAME'),
     
     # GitHub details and personal access token (PAT)
-    'GITHUB_PERSONAL_ACCESS_TOKEN': os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN'),
-    'GITHUB_USERNAME': os.getenv('GITHUB_USERNAME'),
-    'GITHUB_REPO_NAME': os.getenv('GITHUB_REPO_NAME')
+    'GH_PERSONAL_ACCESS_TOKEN': os.getenv('GH_PERSONAL_ACCESS_TOKEN'),
+    'GH_USERNAME': os.getenv('GH_USERNAME'),
+    'GH_REPO_NAME': os.getenv('GH_REPO_NAME')
 }
 
 with open('.env', 'w') as f:
