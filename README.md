@@ -198,7 +198,7 @@ This class handles authentication for Azure services. It is based on the [azure-
 
 ### OneLakeUtils
 
-This class provides utility functions for working with OneLake storage. Take a look at the examples provided in the *[test_OneLakeUtils.ipynb](01-OneLakeUtils/test_OneLakeUtils.ipynb)* notebook.
+This class provides utility functions for working with OneLake storage. Take a look at the examples provided in the *[test_OneLakeUtils.ipynb](tests/01-OneLakeUtils/test_OneLakeUtils.ipynb)* notebook.
 
 #### write_to_lakehouse()
 - Writes data to the lakehouse from various sources (local, git, GitHub, Azure DevOps).
