@@ -162,7 +162,9 @@ Update the `.env` file with the obtained values.
 
 ## Functions
 
-The project consists of three main classes: `FabricAuth`, `OneLakeUtils`, and `FabricAPIs`. Each class provides various functions for interacting with Microsoft Fabric and OneLake. Below is an overview of each class and its key methods:
+The project consists of three main classes: `FabricAuth`, `OneLakeUtils`, and `FabricAPIs`. Each class provides various functions for interacting with Microsoft Fabric and OneLake. Below is an overview of each class and its key methods. 
+
+For detailed usage of these functions, please refer to the examples provided in the *[tests](tests/)* folder of this repo.
 
 ### FabricAuth
 
@@ -328,8 +330,6 @@ This class handles various operations with Microsoft Fabric APIs.
 | file_system_client | FileSystemClient | | The file system client for OneLake storage |
 | batch_size | int | 5 | Number of tables to process in each batch |
 | batch_delay | int | 60 | Delay between batches in seconds |
-
-For detailed usage of these functions, please refer to the docstrings in the source code or the examples provided in the `test.ipynb` file.
 
 ## Troubleshooting
 
