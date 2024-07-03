@@ -3,11 +3,30 @@ AZURE_CLIENT_ID= "<your_azure_client_id>"
 AZURE_TENANT_ID= "<your_azure_tenant_id>"
 AZURE_CLIENT_SECRET= "<your_azure_client_secret>"
 
+# Microsoft Fabric workspace and lakehouse details
+ACCOUNT_NAME= "onelake"
+WORKSPACE_ID= "<your_fabric_workspace_id>"
+LAKEHOUSE_ID= "<your_fabric_lakehouse_id>"
+WORKSPACE_NAME= "<your_fabric_workspace_name>"
+LAKEHOUSE_NAME = "<your_fabric_lakehouse_name>"
+
 # Azure DevOps details and personal access token (PAT)
-PERSONAL_ACCESS_TOKEN= "<your_ado_personal_access_token>"
-ORGANIZATIONAL_URL= "<your_ado_organization_url>"
-PROJECT_NAME= "<your_ado_project_name>"
-REPO_NAME= "<your_ado_repo_name>"
+ADO_PERSONAL_ACCESS_TOKEN= "<your_ado_personal_access_token>"
+ADO_ORGANIZATIONAL_URL= "<your_ado_organization_url>"
+ADO_PROJECT_NAME= "<your_ado_project_name>"
+ADO_REPO_NAME= "<your_ado_repo_name>"
+
+# GitHub details and personal access token (PAT)
+GH_PERSONAL_ACCESS_TOKEN="<your_github_personal_access_token>"
+GH_USERNAME="<your_github_username>"
+GH_REPO_NAME="<your_github_repo_name>"
+
+# Run Notebook Job (REST API)
+NOTEBOOK_ID = "<your_fabric_notebook_id>"
+
+# Run Data Pipeline (REST API)
+PIPELINE_ID = "<your_fabric_pipeline_id>"
+
 
 # MotherDuck Token
 motherduck_token = "<your_motherduck_token>"
@@ -30,14 +49,3 @@ pg_server = "<your_pg_server>"
 pg_port = 5432
 pg_database = "<your_pg_database>"
 
-# Microsoft Fabric workspace and lakehouse details
-ACCOUNT_NAME= "onelake"
-WORKSPACE_ID= "<your_fabric_workspace_id>"
-LAKEHOUSE_ID= "<your_fabric_lakehouse_id>"
-LAKEHOUSE_NAME = "<your_fabric_lakehouse_name>"
-
-# Run Notebook Job (REST API)
-NOTEBOOK_ID = "<your_fabric_notebook_id>"
-
-# Run Data Pipeline (REST API)
-PIPELINE_ID = "<your_fabric_pipeline_id>"
