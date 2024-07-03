@@ -4,7 +4,6 @@ This Python package provides functions for managing Microsoft Fabric and OneLake
 
 ## Table of Contents
 
-- [References](#references)
 - [Features](#features)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
@@ -32,17 +31,9 @@ This Python package provides functions for managing Microsoft Fabric and OneLake
     - [trigger_table_maintenance_job()](#trigger_table_maintenance_job)
     - [trigger_table_maintenance_for_all_tables()](#trigger_table_maintenance_for_all_tables)
 - [Troubleshooting](#troubleshooting)
+- [References](#references)
 - [Contributing](#contributing)
 - [Contact](#contact)
-
-## References
-
-This project compiles documentation from the following sources:
-- [Microsoft Documentation: Use Python to manage files and folders in Microsoft OneLake](https://learn.microsoft.com/en-us/fabric/onelake/onelake-access-python)
-- [GitHub: Azure-Samples/modern-data-warehouse-dataops/single_tech_samples/fabric/fabric_ci_cd](https://github.com/Azure-Samples/modern-data-warehouse-dataops/tree/main/single_tech_samples/fabric/fabric_ci_cd)
-- [GitHub: microsoft/semantic-link-labs](https://github.com/microsoft/semantic-link-labs/)
-- [GitHub: djouallah/Light_ETL_Challenge](https://github.com/djouallah/Light_ETL_Challenge)
-- [Fivetran: OneLake Setup Guide](https://fivetran.com/docs/destinations/onelake/setup-guide)
 
 ## Features
 
@@ -342,6 +333,15 @@ If you encounter issues:
 5. For GitHub private repository issues, ensure your Personal Access Token has the necessary permissions.
 
 For more specific issues, check the error messages in the console output or refer to the [Azure Storage documentation](https://docs.microsoft.com/en-us/azure/storage/).
+
+## References
+
+This project compiles documentation from the following sources:
+- [Microsoft Documentation: Use Python to manage files and folders in Microsoft OneLake](https://learn.microsoft.com/en-us/fabric/onelake/onelake-access-python)
+- [GitHub: Azure-Samples/modern-data-warehouse-dataops/single_tech_samples/fabric/fabric_ci_cd](https://github.com/Azure-Samples/modern-data-warehouse-dataops/tree/main/single_tech_samples/fabric/fabric_ci_cd)
+- [GitHub: microsoft/semantic-link-labs](https://github.com/microsoft/semantic-link-labs/)
+- [GitHub: djouallah/Light_ETL_Challenge](https://github.com/djouallah/Light_ETL_Challenge)
+- [Fivetran: OneLake Setup Guide](https://fivetran.com/docs/destinations/onelake/setup-guide)
 
 ## Contributing
 
