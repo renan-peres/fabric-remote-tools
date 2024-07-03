@@ -1,6 +1,8 @@
 # Fabric Remote Tools
 
-This Python package provides functions for managing Microsoft Fabric and OneLake resources remotely. It enables CRUD operations on Files and Tables of Fabric Lakehouses using the [azure-identity](https://pypi.org/project/azure-identity/) and [azure-storage-file-datalake](https://pypi.org/project/azure-storage-file-datalake/) Python SDKs and running Fabric APIs.
+This Python package enables remote management of Microsoft Fabric and OneLake resources. It provides CRUD operations for Files and Tables in Fabric Lakehouses using the [azure-identity](https://pypi.org/project/azure-identity/) and [azure-storage-file-datalake](https://pypi.org/project/azure-storage-file-datalake/) SDKs, along with Fabric API execution.
+
+The functions are particularly useful for managing Fabric resources within your external CI/CD and IaC pipelines, offering finer-grained control over your Fabric environment.
 
 ## Table of Contents
 
