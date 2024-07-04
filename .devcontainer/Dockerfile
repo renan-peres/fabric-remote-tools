@@ -8,10 +8,23 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     openjdk-11-jdk \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
+# Create vscode user if it doesn't exist
+RUN id -u vscode >/dev/null 2>&1 || useradd -ms /bin/bash vscode
+
+# Set up environment for vscode user
+ENV HOME=/home/vscode
+ENV PATH="${HOME}/.local/bin:${PATH}"
+WORKDIR ${HOME}
+
+# Copy requirements file
+COPY requirements.txt .
+
+# Switch to vscode user for subsequent operations
+USER vscode
+
 # Install Python packages
-COPY requirements.txt /tmp/pip-tmp/
-RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requirements.txt \
-    && sudo rm -rf /tmp/pip-tmp
+RUN pip3 --disable-pip-version-check --no-cache-dir install -r requirements.txt \
+    && rm requirements.txt
 
 # Install fabric_remote_tools from GitHub
 RUN pip3 --disable-pip-version-check --no-cache-dir install \
@@ -20,14 +33,11 @@ RUN pip3 --disable-pip-version-check --no-cache-dir install \
 # Set up IPython kernel (latest version)
 RUN python -m ipykernel install --user --name=python3 --display-name "Python 3 (latest)"
 
-<<<<<<< HEAD
 # Set up Synapse Spark kernel
 RUN pip install sparkmagic pyspark
 RUN jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/pysparkkernel \
     && jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/sparkkernel 
 
-=======
->>>>>>> 204871c4c508bcf2f9a0f580256bf68ec23683d4
 # Set up Oh My Zsh with Powerlevel10k theme
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended \
     && git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k \
@@ -38,13 +48,10 @@ RUN echo 'POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true' >> ~/.zshrc \
     && echo 'POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs)' >> ~/.zshrc \
     && echo 'POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status root_indicator background_jobs time)' >> ~/.zshrc
 
-# Add .local/bin to PATH
-RUN echo 'export PATH=$PATH:~/.local/bin' >> ~/.zshrc
-
-WORKDIR /workspace
-
 # Set default shell to zsh
 ENV SHELL /bin/zsh
 
 # Set JAVA_HOME
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
+
+WORKDIR /workspace
