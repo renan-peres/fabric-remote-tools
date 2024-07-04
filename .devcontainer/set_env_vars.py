@@ -9,6 +9,7 @@ secrets = {
     # Microsoft Fabric workspace and lakehouse details
     'ACCOUNT_NAME': os.getenv('ACCOUNT_NAME'),
     'WORKSPACE_ID': os.getenv('WORKSPACE_ID'),
+    'WORKSPACE_NAME': os.getenv('WORKSPACE_NAME'),
     'LAKEHOUSE_ID': os.getenv('LAKEHOUSE_ID'),
     'LAKEHOUSE_NAME': os.getenv('LAKEHOUSE_NAME'),
     
