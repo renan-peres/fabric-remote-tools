@@ -16,6 +16,8 @@ ENV HOME=/home/vscode
 ENV PATH="${HOME}/.local/bin:${PATH}"
 WORKDIR ${HOME}
 
+WORKDIR /workspace
+
 # Copy requirements.txt and set_env_vars.py to the container
 COPY requirements.txt .
 COPY set_env_vars.py .
@@ -50,4 +52,5 @@ ENV SHELL /bin/zsh
 # Set JAVA_HOME
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
 
-WORKDIR /workspace
+# Set the entrypoint to bash to keep the container running
+CMD ["zsh"]

@@ -31,6 +31,6 @@
         "GH_USERNAME": "${{ secrets.GH_USERNAME }}",
         "GH_REPO_NAME": "${{ secrets.GH_REPO_NAME }}"
     },
-    "postCreateCommand": "python /app/set_env_vars.py",
+    "postCreateCommand": "python /workspace/set_env_vars.py",
     "remoteUser": "vscode"
 }
