@@ -15,9 +15,7 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     git \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get remove -y python3.11 \
-    && apt-get autoremove -y
+    && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip to the latest version
 RUN pip install --upgrade pip
@@ -35,8 +33,8 @@ COPY set_env_vars.py .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Set up IPython kernel
-RUN pip install ipykernel && python -m ipykernel install --user --name=python3
+# Set up IPython kernel with a specific display name
+RUN pip install ipykernel && python -m ipykernel install --user --name=python3 --display-name "Python 3.12.4"
 
 # Install fabric_remote_tools
 RUN pip install https://github.com/renan-peres/fabric-remote-tools/raw/main/fabric_remote_tools-0.1.1.tar.gz

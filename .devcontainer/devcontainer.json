@@ -5,7 +5,8 @@
         "context": "."
     },
     "settings": {
-        "python.pythonPath": "/usr/local/bin/python"
+        "python.pythonPath": "/usr/local/bin/python",
+        "jupyter.notebook.defaultKernel": "python3"
     },
     "extensions": [
         "ms-python.python",
