@@ -20,7 +20,8 @@ COPY requirements.txt .
 USER vscode
 
 # Install Python packages
-RUN pip3 --disable-pip-version-check --no-cache-dir install -r requirements.txt
+RUN pip --disable-pip-version-check --no-cache-dir install --upgrade pip \
+    pip --disable-pip-version-check --no-cache-dir install -r requirements.txt
     
 # Install fabric_remote_tools from GitHub
 RUN pip3 --disable-pip-version-check --no-cache-dir install \
