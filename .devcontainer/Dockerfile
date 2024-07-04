@@ -16,8 +16,9 @@ ENV HOME=/home/vscode
 ENV PATH="${HOME}/.local/bin:${PATH}"
 WORKDIR ${HOME}
 
-# Copy requirements file
+# Copy requirements.txt and set_env_vars.py to the container
 COPY requirements.txt .
+COPY set_env_vars.py .
 
 # Switch to vscode user for subsequent operations
 USER vscode
@@ -32,12 +33,6 @@ RUN pip3 --disable-pip-version-check --no-cache-dir install \
 
 # Set up IPython kernel (latest version)
 RUN python -m ipykernel install --user --name=python3 --display-name "Python 3 (latest)"
-
-# Set up Synapse Spark kernel
-RUN pip install sparkmagic
-RUN jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/pysparkkernel \
-    && jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/sparkkernel \
-    && jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/sparkrkernel
 
 # Set up Oh My Zsh with Powerlevel10k theme
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended \
