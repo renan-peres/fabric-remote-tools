@@ -1,11 +1,16 @@
 FROM mcr.microsoft.com/vscode/devcontainers/universal:2-linux
 
 # Install additional packages
+USER root
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
     unixodbc-dev \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
+# Create vscode user if it doesn't exist
+RUN id -u vscode >/dev/null 2>&1 || useradd -ms /bin/bash vscode
+
+# Switch to vscode user for subsequent operations
 USER vscode
 
 # Install Python packages
@@ -18,9 +23,6 @@ RUN pip3 --disable-pip-version-check --no-cache-dir install \
 # Install fabric_remote_tools from GitHub
 RUN pip3 --disable-pip-version-check --no-cache-dir install \
     https://github.com/renan-peres/fabric-remote-tools/raw/main/fabric_remote_tools-0.1.1.tar.gz
-
-# Install Synapse CLI
-RUN curl https://raw.githubusercontent.com/microsoft/SynapseVSCode/main/install-synapse-cli.sh | bash
 
 # Set up Oh My Zsh with Powerlevel10k theme
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended \

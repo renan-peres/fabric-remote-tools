@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  dev-synapse:
+    container_name: fabric-synapse-container
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - ACCEPT_EULA=Y
+    ports:
+      - "8888:8888"
+    volumes:
+      - ..:/workspace:cached
+    environment:
+      - DEV=True
+    user: vscode
+    command: /bin/sh -c "while sleep 1000; do :; done"

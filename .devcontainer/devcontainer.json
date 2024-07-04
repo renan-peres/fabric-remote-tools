@@ -1,12 +1,8 @@
 {
     "name": "Fabric Synapse Development Container",
-    "build": {
-        "dockerfile": "Dockerfile",
-        "context": ".."
-    },
-    "features": {
-        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
-    },
+    "dockerComposeFile": "docker-compose.yaml",
+    "service": "dev-synapse",
+    "workspaceFolder": "/workspace",
     "customizations": {
         "vscode": {
             "extensions": [
@@ -15,15 +11,17 @@
                 "ms-azuretools.vscode-docker",
                 "gerhardbrueckl.fabricstudio",
                 "ms-azuretools.vscode-azuresynapsespark"
-            ]
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python"
+            }
         }
     },
-    "forwardPorts": [8888],
     "remoteUser": "vscode",
     "remoteEnv": {
         "SYNAPSE_WORKSPACE_NAME": "${localEnv:SYNAPSE_WORKSPACE_NAME}",
         "SYNAPSE_SQL_POOL_NAME": "${localEnv:SYNAPSE_SQL_POOL_NAME}",
         "SYNAPSE_SPARK_POOL_NAME": "${localEnv:SYNAPSE_SPARK_POOL_NAME}"
     },
-    "postCreateCommand": "pip install -r requirements.txt && python /workspace/set_env_vars.py"
+    "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt || true && if [ -f /workspace/set_env_vars.py ]; then python /workspace/set_env_vars.py || true; fi"
 }
