@@ -1,14 +1,14 @@
-version: '3.3'
-
+version: '3.8'
 services:
   dev-synapse:
-    container_name: mariner-synapse-fabric-container
+    container_name: fabric-synapse-container
     build:
-      context: ./
+      context: .
       dockerfile: Dockerfile
-    ports:
-      - 127.0.0.1:8888:20
+      args:
     volumes:
-      - ..:/code/
+      - ..:/workspace:cached
     environment:
-      DEV: 'True'
+      - DEV=True
+    user: vscode
+    command: sleep infinity
