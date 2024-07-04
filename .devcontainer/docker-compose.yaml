@@ -14,4 +14,4 @@ services:
     environment:
       - DEV=True
     user: vscode
-    command: /bin/sh -c "while sleep 1000; do :; done"
+    command: sleep infinity
