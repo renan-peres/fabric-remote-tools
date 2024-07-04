@@ -1,40 +1,35 @@
 {
-    "name": "Fabric Synapse Development Container",
-    "dockerComposeFile": "docker-compose.yaml",
-    "service": "dev-synapse",
-    "workspaceFolder": "/workspace",
-    "customizations": {
-        "vscode": {
-            "extensions": [
-                "ms-python.python",
-                "ms-toolsai.jupyter",
-                "ms-azuretools.vscode-docker",
-                "gerhardbrueckl.fabricstudio",
-                "synapsevscode.synapse"
-            ],
-            "settings": {
-                "python.defaultInterpreterPath": "/usr/local/bin/python",
-                "python.dataScience.jupyterServerURI": "http://localhost:8888/?token=dev",
-                "synapse.endpoint": "${env:SYNAPSE_WORKSPACE_ENDPOINT}",
-                "synapse.workspace": "${env:SYNAPSE_WORKSPACE_NAME}"
-            }
-        }
+    "name": "Python Dev Container",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
     },
+    "settings": {
+        "python.pythonPath": "/usr/local/bin/python",
+        "jupyter.notebook.defaultKernel": "python3"
+    },
+    "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        "gerhardbrueckl.fabricstudio",
+        "synapsevscode.synapse"
+    ],
     "remoteEnv": {
         "AZURE_CLIENT_ID": "${{ secrets.AZURE_CLIENT_ID }}",
         "AZURE_TENANT_ID": "${{ secrets.AZURE_TENANT_ID }}",
         "AZURE_CLIENT_SECRET": "${{ secrets.AZURE_CLIENT_SECRET }}",
         "ACCOUNT_NAME": "${{ secrets.ACCOUNT_NAME }}",
         "WORKSPACE_ID": "${{ secrets.WORKSPACE_ID }}",
+        "WORKSPACE_NAME": "${{ secrets.WORKSPACE_NAME }}",
         "LAKEHOUSE_ID": "${{ secrets.LAKEHOUSE_ID }}",
         "LAKEHOUSE_NAME": "${{ secrets.LAKEHOUSE_NAME }}",
         "ADO_PERSONAL_ACCESS_TOKEN": "${{ secrets.PERSONAL_ACCESS_TOKEN }}",
         "ADO_ORGANIZATIONAL_URL": "${{ secrets.ORGANIZATIONAL_URL }}",
         "ADO_PROJECT_NAME": "${{ secrets.PROJECT_NAME }}",
         "ADO_REPO_NAME": "${{ secrets.REPO_NAME }}",
-        "GH_PERSONAL_ACCESS_TOKEN": "${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}",
-        "GH_USERNAME": "${{ secrets.GITHUB_USERNAME }}",
-        "GH_REPO_NAME": "${{ secrets.GITHUB_REPO_NAME }}"
+        "GH_PERSONAL_ACCESS_TOKEN": "${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}",
+        "GH_USERNAME": "${{ secrets.GH_USERNAME }}",
+        "GH_REPO_NAME": "${{ secrets.GH_REPO_NAME }}"
     },
     "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt && python /app/set_env_vars.py",
     "forwardPorts": [8888],
