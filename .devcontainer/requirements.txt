@@ -1,6 +1,24 @@
+<<<<<<< HEAD
 ipython
 jupyter
 notebook
 ipykernel
 sparkmagic
 azure-synapse-spark
+=======
+python-dotenv==1.0.1
+typing==3.7.4.3
+pandas==2.2.2
+polars==1.0.0
+pyarrow==16.1.0
+deltalake==0.18.2
+connectorx==0.3.3
+pyodbc==5.1.0
+pymssql==2.3.0
+duckdb==1.0.0
+requests==2.32.3
+azure-identity==1.17.0 
+azure-devops==7.1.0b4
+azure-storage-file-datalake==12.15.0
+fabric-remote-tools==0.1.1
+>>>>>>> 4f5c5d6faf4a6ea2e29b4688e62576799be6adc0
