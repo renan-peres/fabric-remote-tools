@@ -37,12 +37,5 @@
         "GITHUB_REPO_NAME": "${{ secrets.GITHUB_REPO_NAME }}"
     },
     "postCreateCommand": "python /app/set_env_vars.py",
-    "remoteUser": "root",
-    "customizations": {
-        "vscode": {
-            "recommendations": [
-                "continue.continue"
-            ]
-        }
-    }
+    "remoteUser": "root"
 }
