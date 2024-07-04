@@ -13,9 +13,6 @@ ENV HOME=/home/vscode
 ENV PATH="${HOME}/.local/bin:${PATH}"
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
 
-# Create workspace directory and set permissions
-RUN mkdir -p /workspace && chown -R vscode:vscode /workspace
-
 WORKDIR /workspace
 
 # Copy requirements file
