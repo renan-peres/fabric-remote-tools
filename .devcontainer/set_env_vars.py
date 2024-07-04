@@ -25,6 +25,8 @@ secrets = {
     'GH_REPO_NAME': os.getenv('GH_REPO_NAME')
 }
 
-with open('.env', 'w') as f:
+# Update .env file
+with open('.env', 'a') as f:
     for key, value in secrets.items():
-        f.write(f"{key}={value}\n")
+        if value is not None:
+            f.write(f"{key}={value}\n")
