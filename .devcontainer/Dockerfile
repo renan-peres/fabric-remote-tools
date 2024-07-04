@@ -8,6 +8,17 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     openjdk-11-jdk \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
+# Install Microsoft Edge
+RUN apt-get update && apt-get install -y \
+        apt-transport-https \
+        ca-certificates \
+        curl \
+        gnupg-agent \
+        software-properties-common
+RUN curl -fsSL https://microsoft.com/msedge-deb.gpg | apt-key add -
+RUN add-apt-repository "deb [arch=amd64] https://microsoft.com/msedge-dev-deb/ stable main"
+RUN apt-get install -y microsoft-edge-dev
+
 # Create vscode user if it doesn't exist
 RUN id -u vscode >/dev/null 2>&1 || useradd -ms /bin/bash vscode
 
@@ -32,11 +43,6 @@ RUN pip3 --disable-pip-version-check --no-cache-dir install \
 
 # Set up IPython kernel (latest version)
 RUN python -m ipykernel install --user --name=python3 --display-name "Python 3 (latest)"
-
-# Set up Synapse Spark kernel
-RUN pip install sparkmagic pyspark
-RUN jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/pysparkkernel \
-    && jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/sparkkernel 
 
 # Set up Oh My Zsh with Powerlevel10k theme
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended \
