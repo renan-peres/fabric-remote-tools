@@ -8,26 +8,25 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     openjdk-11-jdk \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-# Set up environment variables
+# Set up environment for vscode user
 ENV HOME=/home/vscode
 ENV PATH="${HOME}/.local/bin:${PATH}"
-ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
-
 WORKDIR /workspace
 
 # Copy requirements file
 COPY requirements.txt .
 
-# Install Python packages as root
+# Switch to vscode user for subsequent operations
+USER vscode
+
+# Install Python packages
 RUN pip3 --disable-pip-version-check --no-cache-dir install --upgrade pip \
-    && pip3 --disable-pip-version-check --no-cache-dir install -r requirements.txt
+    && pip3 --disable-pip-version-check --no-cache-dir install -r requirements.txt \
+    && rm requirements.txt
 
 # Install fabric_remote_tools from GitHub
 RUN pip3 --disable-pip-version-check --no-cache-dir install \
     https://github.com/renan-peres/fabric-remote-tools/raw/main/fabric_remote_tools-0.1.1.tar.gz
-
-# Switch to vscode user for subsequent operations
-USER vscode
 
 # Set up IPython kernel (latest version)
 RUN python -m ipykernel install --user --name=python3 --display-name "Python 3 (latest)"
@@ -44,3 +43,6 @@ RUN echo 'POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true' >> ~/.zshrc \
 
 # Set default shell to zsh
 ENV SHELL /bin/zsh
+
+# Set JAVA_HOME
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
