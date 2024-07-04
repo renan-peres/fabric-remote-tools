@@ -32,7 +32,5 @@
         "GH_REPO_NAME": "${{ secrets.GH_REPO_NAME }}"
     },
     "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt && python /app/set_env_vars.py",
-    "forwardPorts": [8888],
-    "remoteUser": "root",
-    "overrideCommand": false
+    "remoteUser": "root"
 }
