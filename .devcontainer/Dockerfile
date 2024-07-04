@@ -1,37 +1,58 @@
-FROM mcr.microsoft.com/msfabric/synapsevscode/fabric-synapse-vscode:v2.0.6
+FROM mcr.microsoft.com/vscode/devcontainers/universal:2-linux
 
-RUN tdnf install -y gawk
-RUN tdnf install -y wget
-RUN tdnf install -y wget tar
+# Install additional packages
+USER root
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get -y install --no-install-recommends \
+    unixodbc-dev \
+    openjdk-11-jdk \
+    && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-ARG ACCEPT_EULA="N"
-# Download the license file from the  URL
-RUN wget -O ./license.txt https://raw.githubusercontent.com/microsoft/SynapseVSCode/main/container/LICENSE.txt
+# Create vscode user if it doesn't exist
+RUN id -u vscode >/dev/null 2>&1 || useradd -ms /bin/bash vscode
 
-# Display the license agreement and prompt for acceptance
-RUN cat ./license.txt && \
-    if [ "$ACCEPT_EULA" != "Y" ]; then \
-        echo "You must accept the terms of the license agreement. Set ACCEPT_EULA to 'Y'." && exit 1; \
-    fi
+# Set up environment for vscode user
+ENV HOME=/home/vscode
+ENV PATH="${HOME}/.local/bin:${PATH}"
+WORKDIR ${HOME}
 
+# Copy requirements file
+COPY requirements.txt .
 
-WORKDIR /code
+# Switch to vscode user for subsequent operations
+USER vscode
 
-# Setup SSH with secure root login
-RUN tdnf update -y
+# Install Python packages
+RUN pip3 --disable-pip-version-check --no-cache-dir install -r requirements.txt \
+    && rm requirements.txt
 
-RUN tdnf install -y openssh-server nc \
- && mkdir /var/run/sshd \
- && echo 'root:password' | chpasswd \
- && sed -i 's/\#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+# Install fabric_remote_tools from GitHub
+RUN pip3 --disable-pip-version-check --no-cache-dir install \
+    https://github.com/renan-peres/fabric-remote-tools/raw/main/fabric_remote_tools-0.1.1.tar.gz
 
-# Install PySpark in the base Conda environment
-ENV SPARK_VERSION=3.4.1
-RUN conda install -c conda-forge pyspark==$SPARK_VERSION
+# Set up IPython kernel (latest version)
+RUN python -m ipykernel install --user --name=python3 --display-name "Python 3 (latest)"
 
-# Generate new host keys
-RUN ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key && \
-    chmod 600 /etc/ssh/ssh_host_rsa_key
+# Set up Synapse Spark kernel
+RUN pip install sparkmagic
+RUN jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/pysparkkernel \
+    && jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/sparkkernel \
+    && jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/sparkrkernel
 
-# Restart SSH daemon
-CMD ["/bin/sh", "-c", "/usr/sbin/sshd -D"]
+# Set up Oh My Zsh with Powerlevel10k theme
+RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended \
+    && git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k \
+    && sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="powerlevel10k\/powerlevel10k"/g' ~/.zshrc
+
+# Set up a basic Powerlevel10k configuration
+RUN echo 'POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true' >> ~/.zshrc \
+    && echo 'POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs)' >> ~/.zshrc \
+    && echo 'POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status root_indicator background_jobs time)' >> ~/.zshrc
+
+# Set default shell to zsh
+ENV SHELL /bin/zsh
+
+# Set JAVA_HOME
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
+
+WORKDIR /workspace
