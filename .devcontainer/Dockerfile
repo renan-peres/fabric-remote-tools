@@ -8,24 +8,10 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     openjdk-11-jdk \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-# Install Microsoft Edge
-RUN apt-get update && apt-get install -y \
-        apt-transport-https \
-        ca-certificates \
-        curl \
-        gnupg-agent \
-        software-properties-common
-RUN curl -fsSL https://microsoft.com/msedge-deb.gpg | apt-key add -
-RUN add-apt-repository "deb [arch=amd64] https://microsoft.com/msedge-dev-deb/ stable main"
-RUN apt-get install -y microsoft-edge-dev
-
-# Create vscode user if it doesn't exist
-RUN id -u vscode >/dev/null 2>&1 || useradd -ms /bin/bash vscode
-
 # Set up environment for vscode user
 ENV HOME=/home/vscode
 ENV PATH="${HOME}/.local/bin:${PATH}"
-WORKDIR ${HOME}
+WORKDIR /workspace
 
 # Copy requirements file
 COPY requirements.txt .
@@ -34,7 +20,8 @@ COPY requirements.txt .
 USER vscode
 
 # Install Python packages
-RUN pip3 --disable-pip-version-check --no-cache-dir install -r requirements.txt \
+RUN pip3 --disable-pip-version-check --no-cache-dir install --upgrade pip \
+    && pip3 --disable-pip-version-check --no-cache-dir install -r requirements.txt \
     && rm requirements.txt
 
 # Install fabric_remote_tools from GitHub
@@ -59,5 +46,3 @@ ENV SHELL /bin/zsh
 
 # Set JAVA_HOME
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
-
-WORKDIR /workspace
