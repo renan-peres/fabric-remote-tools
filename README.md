@@ -23,7 +23,7 @@ The functions are particularly useful for managing Fabric resources within your 
   - [OneLakeUtils](#onelakeutils)
     - [write_to_lakehouse()](#write_to_lakehouse)
     - [list_items()](#list_items)
-    - [read_delta_from_fabric_lakehouse()](#read_delta_from_fabric_lakehouse)
+    - [read_deltalake()](#read_deltalake)
     - [download_from_lakehouse()](#download_from_lakehouse)
     - [delete_file()](#delete_file)
   - [FabricAPIs](#fabricapis)
@@ -230,7 +230,7 @@ This class provides utility functions for working with OneLake storage. Take a l
 | lakehouse_id | str | | The ID of the lakehouse |
 | print_output | bool | False | Whether to print the output |
 
-#### read_delta_from_fabric_lakehouse()
+#### read_deltalake()
 - Reads a delta table from OneLake storage using the specified engine and version.
 
 ##### Parameters
