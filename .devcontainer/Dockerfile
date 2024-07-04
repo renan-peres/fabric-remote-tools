@@ -34,6 +34,7 @@ RUN pip3 --disable-pip-version-check --no-cache-dir install \
 RUN python -m ipykernel install --user --name=python3 --display-name "Python 3 (latest)"
 
 # Set up Synapse Spark kernel
+RUN pip install sparkmagic pyspark
 RUN jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/pysparkkernel \
     && jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/sparkkernel 
 
