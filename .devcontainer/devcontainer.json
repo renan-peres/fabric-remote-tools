@@ -13,7 +13,9 @@
         "ms-python.vscode-pylance",
         "ms-toolsai.jupyter",
         "quarto.quarto",
-        "ms-python.debugpy"
+        "ms-python.debugpy",
+        "dracula-theme.theme-dracula",
+        "microsoft.fabric-studio"
     ],
     "remoteEnv": {
         "SECRET_KEY": "${{ secrets.SECRET_KEY }}",
