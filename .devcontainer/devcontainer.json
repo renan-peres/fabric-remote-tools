@@ -16,7 +16,7 @@
         "quarto.quarto",
         "ms-python.debugpy",
         "dracula-theme.theme-dracula",
-        "microsoft.fabric-studio"
+        "gerhardbrueckl.fabricstudio"
     ],
     "remoteEnv": {
         "SECRET_KEY": "${{ secrets.SECRET_KEY }}",
@@ -37,5 +37,12 @@
         "GITHUB_REPO_NAME": "${{ secrets.GITHUB_REPO_NAME }}"
     },
     "postCreateCommand": "python /app/set_env_vars.py",
-    "remoteUser": "root"
+    "remoteUser": "root",
+    "customizations": {
+        "vscode": {
+            "recommendations": [
+                "continue.continue"
+            ]
+        }
+    }
 }
