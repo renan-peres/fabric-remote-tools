@@ -33,6 +33,5 @@
         "GH_REPO_NAME": "${localEnv:GH_REPO_NAME}"
     },
     "postCreateCommand": "python /app/set_env_vars.py",
-    "remoteUser": "vscode",
-    "workspaceFolder": "/workspace"
+    "remoteUser": "vscode"
 }
