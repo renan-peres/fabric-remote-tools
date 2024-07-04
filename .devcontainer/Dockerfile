@@ -5,6 +5,7 @@ USER root
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
     unixodbc-dev \
+    openjdk-11-jdk \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 # Create vscode user if it doesn't exist
@@ -14,15 +15,22 @@ RUN id -u vscode >/dev/null 2>&1 || useradd -ms /bin/bash vscode
 USER vscode
 
 # Install Python packages
-RUN pip3 --disable-pip-version-check --no-cache-dir install \
-    python-dotenv==1.0.1 \
-    typing==3.7.4.3 \
-    pandas==2.2.2 \
-    pyodbc==5.1.0
+COPY requirements.txt /tmp/pip-tmp/
+RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requirements.txt \
+    && sudo rm -rf /tmp/pip-tmp
 
 # Install fabric_remote_tools from GitHub
 RUN pip3 --disable-pip-version-check --no-cache-dir install \
     https://github.com/renan-peres/fabric-remote-tools/raw/main/fabric_remote_tools-0.1.1.tar.gz
+
+# Set up IPython kernel (latest version)
+RUN python -m ipykernel install --user --name=python3 --display-name "Python 3 (latest)"
+
+# Set up Synapse Spark kernel
+RUN pip install sparkmagic
+RUN jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/pysparkkernel \
+    && jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/sparkkernel \
+    && jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/sparkrkernel
 
 # Set up Oh My Zsh with Powerlevel10k theme
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended \
@@ -34,7 +42,13 @@ RUN echo 'POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true' >> ~/.zshrc \
     && echo 'POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs)' >> ~/.zshrc \
     && echo 'POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status root_indicator background_jobs time)' >> ~/.zshrc
 
+# Add .local/bin to PATH
+RUN echo 'export PATH=$PATH:~/.local/bin' >> ~/.zshrc
+
 WORKDIR /workspace
 
 # Set default shell to zsh
 ENV SHELL /bin/zsh
+
+# Set JAVA_HOME
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64

@@ -8,7 +8,7 @@ connectorx==0.3.3
 pyodbc==5.1.0
 pymssql==2.3.0
 duckdb==1.0.0
-requests==2.31.0
+requests==2.32.3
 azure-identity==1.17.0 
 azure-devops==7.1.0b4
 azure-storage-file-datalake==12.15.0

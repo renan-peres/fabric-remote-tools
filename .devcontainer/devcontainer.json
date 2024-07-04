@@ -10,18 +10,24 @@
                 "ms-toolsai.jupyter",
                 "ms-azuretools.vscode-docker",
                 "gerhardbrueckl.fabricstudio",
-                "ms-azuretools.vscode-azuresynapsespark"
+                "synapsevscode.synapse"
             ],
             "settings": {
-                "python.defaultInterpreterPath": "/usr/local/bin/python"
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.dataScience.jupyterServerURI": "http://localhost:8888/?token=dev",
+                "synapse.endpoint": "${env:SYNAPSE_WORKSPACE_ENDPOINT}",
+                "synapse.workspace": "${env:SYNAPSE_WORKSPACE_NAME}"
             }
         }
     },
     "remoteUser": "vscode",
     "remoteEnv": {
         "SYNAPSE_WORKSPACE_NAME": "${localEnv:SYNAPSE_WORKSPACE_NAME}",
+        "SYNAPSE_WORKSPACE_ENDPOINT": "${localEnv:SYNAPSE_WORKSPACE_ENDPOINT}",
         "SYNAPSE_SQL_POOL_NAME": "${localEnv:SYNAPSE_SQL_POOL_NAME}",
         "SYNAPSE_SPARK_POOL_NAME": "${localEnv:SYNAPSE_SPARK_POOL_NAME}"
     },
-    "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt || true && if [ -f /workspace/set_env_vars.py ]; then python /workspace/set_env_vars.py || true; fi"
+    "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt && if [ -f /workspace/set_env_vars.py ]; then python /workspace/set_env_vars.py || true; fi",
+    "forwardPorts": [8888],
+    "overrideCommand": false
 }
