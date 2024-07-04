@@ -1,48 +1,46 @@
 FROM mcr.microsoft.com/vscode/devcontainers/universal:2-linux
 
 # Install additional packages
-# Stage 1: Python environment
-FROM python:3.12.4 AS python_env
-
-# Set environment variables to avoid issues with debconf
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install system dependencies and clean up any other Python versions
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    gcc \
-    g++ \
+USER root
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get -y install --no-install-recommends \
     unixodbc-dev \
-    libssl-dev \
-    libffi-dev \
-    git \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    openjdk-11-jdk \
+    && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip to the latest version
-RUN pip install --upgrade pip
+# Create vscode user if it doesn't exist
+RUN id -u vscode >/dev/null 2>&1 || useradd -ms /bin/bash vscode
 
-# Install python-dotenv to manage environment variables
-RUN pip install python-dotenv
-
-# Create a working directory
-WORKDIR /app
+# Set up environment for vscode user
+ENV HOME=/home/vscode
+ENV PATH="${HOME}/.local/bin:${PATH}"
+WORKDIR ${HOME}
 
 # Copy requirements.txt and set_env_vars.py to the container
 COPY requirements.txt .
 COPY set_env_vars.py .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python packages
+RUN pip3 --disable-pip-version-check --no-cache-dir install -r requirements.txt \
+    && rm requirements.txt
 
 # Set up IPython kernel with a specific display name
 RUN pip install ipykernel && python -m ipykernel install --user --name=python3 --display-name "Python 3.12.4"
 
-# Install fabric_remote_tools
-RUN pip install https://github.com/renan-peres/fabric-remote-tools/raw/main/fabric_remote_tools-0.1.1.tar.gz
+# Install fabric_remote_tools from GitHub
+RUN pip3 --disable-pip-version-check --no-cache-dir install \
+    https://github.com/renan-peres/fabric-remote-tools/raw/main/fabric_remote_tools-0.1.1.tar.gz
 
-# Stage 2: Synapse environment
+# Switch to vscode user for subsequent operations
+USER vscode
+
+# Set up Synapse Spark kernel
+RUN pip install sparkmagic
+RUN jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/pysparkkernel \
+    && jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/sparkkernel \
+    && jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/sparkrkernel
+
+# Set up Oh My Zsh with Powerlevel10k theme
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended \
     && git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k \
     && sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="powerlevel10k\/powerlevel10k"/g' ~/.zshrc
@@ -57,3 +55,9 @@ ENV SHELL /bin/zsh
 
 # Set JAVA_HOME
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
+
+# Set working directory
+WORKDIR /workspace
+
+# Start SSH daemon and keep container running
+CMD ["/bin/sh", "-c", "/usr/sbin/sshd -D"]
