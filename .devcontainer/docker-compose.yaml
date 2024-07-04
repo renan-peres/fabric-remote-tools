@@ -5,10 +5,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
     volumes:
       - ..:/workspace:cached
     environment:
       - DEV=True
     user: vscode
     command: sleep infinity
+    healthcheck:
+      test: ["CMD", "pgrep", "zsh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

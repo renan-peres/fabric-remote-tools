@@ -1,4 +1,8 @@
 import os
+from dotenv import load_dotenv
+
+# Load existing .env file if it exists
+load_dotenv()
 
 secrets = {
     # Azure Service principal (SP) credentials

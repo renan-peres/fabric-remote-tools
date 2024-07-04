@@ -5,7 +5,18 @@
         "context": "."
     },
     "settings": {
-        "python.pythonPath": "/usr/local/bin/python",
+        "python.pythonPath": "/opt/venv/bin/python",
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "python.formatting.autopep8Path": "/opt/venv/bin/autopep8",
+        "python.formatting.blackPath": "/opt/venv/bin/black",
+        "python.formatting.yapfPath": "/opt/venv/bin/yapf",
+        "python.linting.banditPath": "/opt/venv/bin/bandit",
+        "python.linting.flake8Path": "/opt/venv/bin/flake8",
+        "python.linting.mypyPath": "/opt/venv/bin/mypy",
+        "python.linting.pycodestylePath": "/opt/venv/bin/pycodestyle",
+        "python.linting.pydocstylePath": "/opt/venv/bin/pydocstyle",
         "jupyter.notebook.defaultKernel": "python3"
     },
     "extensions": [
@@ -15,22 +26,25 @@
         "synapsevscode.synapse"
     ],
     "remoteEnv": {
-        "AZURE_CLIENT_ID": "${{ secrets.AZURE_CLIENT_ID }}",
-        "AZURE_TENANT_ID": "${{ secrets.AZURE_TENANT_ID }}",
-        "AZURE_CLIENT_SECRET": "${{ secrets.AZURE_CLIENT_SECRET }}",
-        "ACCOUNT_NAME": "${{ secrets.ACCOUNT_NAME }}",
-        "WORKSPACE_ID": "${{ secrets.WORKSPACE_ID }}",
-        "WORKSPACE_NAME": "${{ secrets.WORKSPACE_NAME }}",
-        "LAKEHOUSE_ID": "${{ secrets.LAKEHOUSE_ID }}",
-        "LAKEHOUSE_NAME": "${{ secrets.LAKEHOUSE_NAME }}",
-        "ADO_PERSONAL_ACCESS_TOKEN": "${{ secrets.PERSONAL_ACCESS_TOKEN }}",
-        "ADO_ORGANIZATIONAL_URL": "${{ secrets.ORGANIZATIONAL_URL }}",
-        "ADO_PROJECT_NAME": "${{ secrets.PROJECT_NAME }}",
-        "ADO_REPO_NAME": "${{ secrets.REPO_NAME }}",
-        "GH_PERSONAL_ACCESS_TOKEN": "${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}",
-        "GH_USERNAME": "${{ secrets.GH_USERNAME }}",
-        "GH_REPO_NAME": "${{ secrets.GH_REPO_NAME }}"
+        "AZURE_CLIENT_ID": "${localEnv:AZURE_CLIENT_ID}",
+        "AZURE_TENANT_ID": "${localEnv:AZURE_TENANT_ID}",
+        "AZURE_CLIENT_SECRET": "${localEnv:AZURE_CLIENT_SECRET}",
+        "ACCOUNT_NAME": "${localEnv:ACCOUNT_NAME}",
+        "WORKSPACE_ID": "${localEnv:WORKSPACE_ID}",
+        "WORKSPACE_NAME": "${localEnv:WORKSPACE_NAME}",
+        "LAKEHOUSE_ID": "${localEnv:LAKEHOUSE_ID}",
+        "LAKEHOUSE_NAME": "${localEnv:LAKEHOUSE_NAME}",
+        "ADO_PERSONAL_ACCESS_TOKEN": "${localEnv:ADO_PERSONAL_ACCESS_TOKEN}",
+        "ADO_ORGANIZATIONAL_URL": "${localEnv:ADO_ORGANIZATIONAL_URL}",
+        "ADO_PROJECT_NAME": "${localEnv:ADO_PROJECT_NAME}",
+        "ADO_REPO_NAME": "${localEnv:ADO_REPO_NAME}",
+        "GH_PERSONAL_ACCESS_TOKEN": "${localEnv:GH_PERSONAL_ACCESS_TOKEN}",
+        "GH_USERNAME": "${localEnv:GH_USERNAME}",
+        "GH_REPO_NAME": "${localEnv:GH_REPO_NAME}"
     },
     "postCreateCommand": "python /workspace/set_env_vars.py",
-    "remoteUser": "vscode"
+    "remoteUser": "vscode",
+    "runArgs": ["--env-file", ".env"],
+    "forwardPorts": [],
+    "postStartCommand": "echo 'Container is ready!'"
 }
