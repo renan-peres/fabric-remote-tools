@@ -1,24 +1,21 @@
-FROM mcr.microsoft.com/msfabric/synapsevscode/fabric-synapse-vscode:latest
+FROM mcr.microsoft.com/devcontainers/python:3.10
 
-# Switch to root to install additional packages
+# Install additional packages
 USER root
-
-# Install additional packages if needed
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
         unixodbc-dev \
+        openjdk-11-jdk \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 # Set environment variables
-ENV HOME=/home/vscode \
-    PATH="${HOME}/.local/bin:${PATH}" \
-    SHELL=/bin/bash
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
 
-# Switch back to vscode user
+# Switch to vscode user
 USER vscode
 WORKDIR /workspace
 
-# Install additional Python packages if needed
+# Install Python packages
 COPY requirements.txt .
 RUN pip3 --disable-pip-version-check --no-cache-dir install -r requirements.txt \
     && rm requirements.txt
