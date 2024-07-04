@@ -33,6 +33,6 @@
     },
     "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt && python /app/set_env_vars.py",
     "forwardPorts": [8888],
-    "remoteUser": "root"
+    "remoteUser": "root",
     "overrideCommand": false
 }
