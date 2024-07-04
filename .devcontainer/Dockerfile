@@ -8,9 +8,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     openjdk-11-jdk \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-# Install Azure CLI
-RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
-
 # Create vscode user if it doesn't exist
 RUN id -u vscode >/dev/null 2>&1 || useradd -ms /bin/bash vscode
 
