@@ -3,4 +3,10 @@ jupyter
 notebook
 ipykernel
 sparkmagic
+<<<<<<< HEAD
 azure-synapse-spark
+=======
+pyspark
+azure-synapse-spark
+azure-cli
+>>>>>>> 204871c4c508bcf2f9a0f580256bf68ec23683d4
