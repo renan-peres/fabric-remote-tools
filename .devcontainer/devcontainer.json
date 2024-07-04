@@ -1,58 +1,29 @@
 {
-    "name": "Python and Synapse Dev Container",
+    "name": "Fabric Synapse Development Container",
     "build": {
         "dockerfile": "Dockerfile",
-        "context": ".",
-        "args": {
-            "ACCEPT_EULA": "Y"
+        "context": ".."
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-toolsai.jupyter",
+                "ms-azuretools.vscode-docker",
+                "gerhardbrueckl.fabricstudio",
+                "ms-azuretools.vscode-azuresynapsespark"
+            ]
         }
     },
-    "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python",
-        "python.pythonPath": "/usr/local/bin/python",
-        "jupyter.kernels.filter": [
-            {
-                "path": "/usr/local/share/jupyter/kernels",
-                "type": "jupyterKernelspec"
-            },
-            {
-                "path": "/opt/conda/share/jupyter/kernels",
-                "type": "jupyterKernelspec"
-            }
-        ],
-        "jupyter.notebook.defaultKernelName": "python3"
-    },
-    "extensions": [
-        "ms-vscode-remote.vscode-remote-extensionpack",
-        "ms-python.python",
-        "ms-azuretools.vscode-docker",
-        "ms-python.vscode-pylance",
-        "ms-toolsai.jupyter",
-        "quarto.quarto",
-        "ms-python.debugpy",
-        "dracula-theme.theme-dracula",
-        "gerhardbrueckl.fabricstudio",
-        "ms-azuretools.vscode-azuresynapsespark"
-    ],
+    "forwardPorts": [8888],
+    "remoteUser": "vscode",
     "remoteEnv": {
-        "AZURE_CLIENT_ID": "${localEnv:AZURE_CLIENT_ID}",
-        "AZURE_TENANT_ID": "${localEnv:AZURE_TENANT_ID}",
-        "AZURE_CLIENT_SECRET": "${localEnv:AZURE_CLIENT_SECRET}",
-        "ACCOUNT_NAME": "${localEnv:ACCOUNT_NAME}",
-        "WORKSPACE_ID": "${localEnv:WORKSPACE_ID}",
-        "WORKSPACE_NAME": "${localEnv:WORKSPACE_NAME}",
-        "LAKEHOUSE_ID": "${localEnv:LAKEHOUSE_ID}",
-        "LAKEHOUSE_NAME": "${localEnv:LAKEHOUSE_NAME}",
-        "ADO_PERSONAL_ACCESS_TOKEN": "${localEnv:ADO_PERSONAL_ACCESS_TOKEN}",
-        "ADO_ORGANIZATIONAL_URL": "${localEnv:ADO_ORGANIZATIONAL_URL}",
-        "ADO_PROJECT_NAME": "${localEnv:ADO_PROJECT_NAME}",
-        "ADO_REPO_NAME": "${localEnv:ADO_REPO_NAME}",
-        "GH_PERSONAL_ACCESS_TOKEN": "${localEnv:GH_PERSONAL_ACCESS_TOKEN}",
-        "GH_USERNAME": "${localEnv:GH_USERNAME}",
-        "GH_REPO_NAME": "${localEnv:GH_REPO_NAME}"
+        "SYNAPSE_WORKSPACE_NAME": "${localEnv:SYNAPSE_WORKSPACE_NAME}",
+        "SYNAPSE_SQL_POOL_NAME": "${localEnv:SYNAPSE_SQL_POOL_NAME}",
+        "SYNAPSE_SPARK_POOL_NAME": "${localEnv:SYNAPSE_SPARK_POOL_NAME}"
     },
-    "postCreateCommand": "python /app/set_env_vars.py",
-    "remoteUser": "root",
-    "forwardPorts": [22],
-    "overrideCommand": false
+    "postCreateCommand": "pip install -r requirements.txt && python /workspace/set_env_vars.py"
 }
