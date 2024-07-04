@@ -20,7 +20,6 @@
             }
         }
     },
-    "remoteUser": "vscode",
     "remoteEnv": {
         "AZURE_CLIENT_ID": "${{ secrets.AZURE_CLIENT_ID }}",
         "AZURE_TENANT_ID": "${{ secrets.AZURE_TENANT_ID }}",
@@ -37,7 +36,8 @@
         "GH_USERNAME": "${{ secrets.GITHUB_USERNAME }}",
         "GH_REPO_NAME": "${{ secrets.GITHUB_REPO_NAME }}"
     },
-    "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt && if [ -f /workspace/set_env_vars.py ]; then python /workspace/set_env_vars.py || true; fi",
+    "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt && python /app/set_env_vars.py",
     "forwardPorts": [8888],
+    "remoteUser": "root"
     "overrideCommand": false
 }
