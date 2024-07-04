@@ -27,11 +27,7 @@
         "SYNAPSE_SQL_POOL_NAME": "${localEnv:SYNAPSE_SQL_POOL_NAME}",
         "SYNAPSE_SPARK_POOL_NAME": "${localEnv:SYNAPSE_SPARK_POOL_NAME}"
     },
-<<<<<<< HEAD
     "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt && if [ -f /workspace/set_env_vars.py ]; then python /workspace/set_env_vars.py || true; fi",
     "forwardPorts": [8888],
     "overrideCommand": false
-=======
-    "postCreateCommand": "pip install --upgrade pip && pip install -r <(grep -v fabric-remote-tools requirements.txt) && pip install -r <(grep fabric-remote-tools requirements.txt) && if [ -f /workspace/set_env_vars.py ]; then python /workspace/set_env_vars.py || true; fi"
->>>>>>> 4f5c5d6faf4a6ea2e29b4688e62576799be6adc0
 }
