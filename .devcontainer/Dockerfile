@@ -20,8 +20,7 @@ COPY requirements.txt .
 
 # Install Python packages as root
 RUN pip3 --disable-pip-version-check --no-cache-dir install --upgrade pip \
-    && pip3 --disable-pip-version-check --no-cache-dir install -r requirements.txt \
-    && rm requirements.txt
+    && pip3 --disable-pip-version-check --no-cache-dir install -r requirements.txt
 
 # Install fabric_remote_tools from GitHub
 RUN pip3 --disable-pip-version-check --no-cache-dir install \
