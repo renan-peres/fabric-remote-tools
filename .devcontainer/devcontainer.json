@@ -6,11 +6,7 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                "ms-python.python",
-                "ms-toolsai.jupyter",
-                "ms-azuretools.vscode-docker",
                 "gerhardbrueckl.fabricstudio",
-                "ms-azuretools.vscode-azurestorage",
                 "synapsevscode.synapse"
             ],
             "settings": {
