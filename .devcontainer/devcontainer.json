@@ -10,6 +10,7 @@
                 "ms-toolsai.jupyter",
                 "ms-azuretools.vscode-docker",
                 "gerhardbrueckl.fabricstudio",
+                "ms-azuretools.vscode-azurestorage",
                 "synapsevscode.synapse"
             ],
             "settings": {
@@ -20,12 +21,23 @@
             }
         }
     },
-    "remoteUser": "vscode",
     "remoteEnv": {
-        "SYNAPSE_WORKSPACE_NAME": "${localEnv:SYNAPSE_WORKSPACE_NAME}",
-        "SYNAPSE_WORKSPACE_ENDPOINT": "${localEnv:SYNAPSE_WORKSPACE_ENDPOINT}",
-        "SYNAPSE_SQL_POOL_NAME": "${localEnv:SYNAPSE_SQL_POOL_NAME}",
-        "SYNAPSE_SPARK_POOL_NAME": "${localEnv:SYNAPSE_SPARK_POOL_NAME}"
+        "SECRET_KEY": "${{ secrets.SECRET_KEY }}",
+        "DATABASE_URL": "${{ secrets.DATABASE_URL }}",
+        "AZURE_CLIENT_ID": "${{ secrets.AZURE_CLIENT_ID }}",
+        "AZURE_TENANT_ID": "${{ secrets.AZURE_TENANT_ID }}",
+        "AZURE_CLIENT_SECRET": "${{ secrets.AZURE_CLIENT_SECRET }}",
+        "ACCOUNT_NAME": "${{ secrets.ACCOUNT_NAME }}",
+        "WORKSPACE_ID": "${{ secrets.WORKSPACE_ID }}",
+        "LAKEHOUSE_ID": "${{ secrets.LAKEHOUSE_ID }}",
+        "LAKEHOUSE_NAME": "${{ secrets.LAKEHOUSE_NAME }}",
+        "PERSONAL_ACCESS_TOKEN": "${{ secrets.PERSONAL_ACCESS_TOKEN }}",
+        "ORGANIZATIONAL_URL": "${{ secrets.ORGANIZATIONAL_URL }}",
+        "PROJECT_NAME": "${{ secrets.PROJECT_NAME }}",
+        "REPO_NAME": "${{ secrets.REPO_NAME }}",
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}",
+        "GITHUB_USERNAME": "${{ secrets.GITHUB_USERNAME }}",
+        "GITHUB_REPO_NAME": "${{ secrets.GITHUB_REPO_NAME }}"
     },
     "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt && if [ -f /workspace/set_env_vars.py ]; then python /workspace/set_env_vars.py || true; fi",
     "forwardPorts": [8888],
@@ -34,6 +46,9 @@
             "protocol": "http",
             "visibility": "public"
         }
+    },
+    "features": {
+        "ghcr.io/microsoft/azurecli:latest": {}
     },
     "overrideCommand": false
 }

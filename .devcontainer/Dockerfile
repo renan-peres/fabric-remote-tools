@@ -8,6 +8,9 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     openjdk-11-jdk \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
+# Install Azure CLI
+RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+
 # Create vscode user if it doesn't exist
 RUN id -u vscode >/dev/null 2>&1 || useradd -ms /bin/bash vscode
 
@@ -32,10 +35,6 @@ RUN pip3 --disable-pip-version-check --no-cache-dir install \
 
 # Set up IPython kernel (latest version)
 RUN python -m ipykernel install --user --name=python3 --display-name "Python 3 (latest)"
-
-# Set up Synapse Spark kernel
-RUN jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/pysparkkernel \
-    && jupyter kernelspec install --user $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/sparkkernel 
 
 # Set up Oh My Zsh with Powerlevel10k theme
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended \
