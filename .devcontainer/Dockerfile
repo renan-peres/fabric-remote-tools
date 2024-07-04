@@ -54,3 +54,6 @@ ENV SHELL /bin/zsh
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
 
 WORKDIR /workspace
+
+# Expose port for Jupyter and Synapse
+EXPOSE 8888

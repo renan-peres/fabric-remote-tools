@@ -29,5 +29,11 @@
     },
     "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt && if [ -f /workspace/set_env_vars.py ]; then python /workspace/set_env_vars.py || true; fi",
     "forwardPorts": [8888],
+    "portsAttributes": {
+        "8888": {
+            "protocol": "http",
+            "visibility": "public"
+        }
+    },
     "overrideCommand": false
 }
