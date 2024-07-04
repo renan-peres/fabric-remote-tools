@@ -3,4 +3,6 @@ jupyter
 notebook
 ipykernel
 sparkmagic
+pyspark
 azure-synapse-spark
+azure-cli
