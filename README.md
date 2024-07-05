@@ -2,7 +2,7 @@
 
 This purpose with this package was to include some of the available options for remote management of Microsoft Fabric and OneLake resources.
 
-The functions are particularly useful for managing Fabric resources within your external CI/CD and IaC pipelines. It provides CRUD operations for Files and Tables in a Fabric Lakehouses, UPSERT operstions for Delta Tables, and some funtions for executing Fabric APIs.
+The functions are particularly useful for managing Fabric resources within your external CI/CD and IaC pipelines. It provides CRUD operations for Files and Tables in a  Lakehouses, UPSERT operstions for Delta Tables, and some funtions for API executions.
 
 ## Table of Contents
 
