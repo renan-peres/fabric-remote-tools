@@ -2,7 +2,3 @@ azure-synapse-spark
 azure-identity
 python-dotenv
 pyspark
-jupyter
-notebook
-ipykernel
-azure-cli
