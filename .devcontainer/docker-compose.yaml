@@ -23,4 +23,5 @@ services:
       - GH_PERSONAL_ACCESS_TOKEN
       - GH_USERNAME
       - GH_REPO_NAME
+    user: devuser
     command: /bin/zsh -c "python /workspace/set_env_vars.py && zsh"
