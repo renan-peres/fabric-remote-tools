@@ -1,5 +1,5 @@
 {
-    "name": "Fabric Synapse DevContainer",
+    "name": "Fabric Remote Tools",
     "build": {
         "dockerfile": "Dockerfile",
         "context": "."

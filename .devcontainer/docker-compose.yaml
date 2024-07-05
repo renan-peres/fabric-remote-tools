@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  fabric-synapse-dev:
+  fabric-remote-tools:
     build:
       context: .
       dockerfile: Dockerfile
