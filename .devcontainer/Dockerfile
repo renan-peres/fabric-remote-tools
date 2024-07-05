@@ -1,9 +1,9 @@
 # Python base image from Docker Hub
 FROM python:3.12.4
 
-# Install system dependencies including sudo
+# Update package lists and install system dependencies
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     unixodbc-dev \
     ca-certificates \
     curl \
@@ -13,14 +13,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zsh \
     git \
     fonts-powerline \
-    sudo \
     && curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/microsoft.gpg \
     && echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $(lsb_release -cs) main" > /etc/apt/sources.list.d/azure-cli.list \
     && apt-get update && apt-get install -y azure-cli \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Create a non-root user and give sudo access
-RUN useradd -m -s /bin/zsh devuser && echo "devuser ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/devuser
 
 # Set up workspace and install Python Packages
 WORKDIR /workspace
@@ -45,8 +41,5 @@ RUN echo 'source ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k/pow
 
 # Set default shell to zsh
 SHELL ["/bin/zsh", "-c"]
-
-# Switch to non-root user
-USER devuser
 
 CMD ["zsh"]
