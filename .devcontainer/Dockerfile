@@ -1,7 +1,7 @@
-# Use a specific Python version base image from Docker Hub
+# Python base image from Docker Hub
 FROM python:3.12.4
 
-# Set environment variables and install system dependencies
+# Install system dependencies
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     unixodbc-dev \
@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install --upgrade pip uv python-dotenv ipykernel \
     && python -m ipykernel install --user --name=python3
 
-# Set up workspace
+# Set up workspace and install Python Packages
 WORKDIR /workspace
 COPY requirements.txt set_env_vars.py ./
 RUN uv pip install --no-cache-dir -r requirements.txt \
