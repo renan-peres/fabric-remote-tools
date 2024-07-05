@@ -23,21 +23,17 @@ RUN pip install --upgrade pip
 # Install python-dotenv to manage environment variables
 RUN pip install python-dotenv
 
-# Create a working directory
-WORKDIR /app
+# Switch to vscode user
+USER vscode
+WORKDIR /workspace
 
-# Copy requirements.txt and set_env_vars.py to the container
+# Install Python packages
 COPY requirements.txt .
-COPY set_env_vars.py .
+RUN pip3 --disable-pip-version-check --no-cache-dir install -r requirements.txt \
+    && rm requirements.txt
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy set_env_vars.py to the container
+COPY set_env_vars.py /workspace/set_env_vars.py
 
-# Set up IPython kernel with a specific display name
-RUN pip install ipykernel && python -m ipykernel install --user --name=python3 --display-name "Python 3.12.4"
-
-# Install fabric_remote_tools
-RUN pip install https://github.com/renan-peres/fabric-remote-tools/raw/main/fabric_remote_tools-0.1.1.tar.gz
-
-# Set the entrypoint to bash to keep the container running
-CMD ["bash"]
+# Set the entrypoint to bash
+CMD ["/bin/bash"]

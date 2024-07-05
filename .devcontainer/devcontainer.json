@@ -1,22 +1,13 @@
 {
-    "name": "Python Dev Container",
+    "name": "Fabric Synapse DevContainer",
     "build": {
         "dockerfile": "Dockerfile",
         "context": "."
     },
     "settings": {
-        "python.pythonPath": "/opt/venv/bin/python",
-        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
         "python.linting.enabled": true,
         "python.linting.pylintEnabled": true,
-        "python.formatting.autopep8Path": "/opt/venv/bin/autopep8",
-        "python.formatting.blackPath": "/opt/venv/bin/black",
-        "python.formatting.yapfPath": "/opt/venv/bin/yapf",
-        "python.linting.banditPath": "/opt/venv/bin/bandit",
-        "python.linting.flake8Path": "/opt/venv/bin/flake8",
-        "python.linting.mypyPath": "/opt/venv/bin/mypy",
-        "python.linting.pycodestylePath": "/opt/venv/bin/pycodestyle",
-        "python.linting.pydocstylePath": "/opt/venv/bin/pydocstyle",
         "jupyter.notebook.defaultKernel": "python3"
     },
     "extensions": [
