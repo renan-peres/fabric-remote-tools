@@ -1,6 +1,6 @@
 # Fabric Remote Tools
 
-This purpose with this package was to enables remote management of Microsoft Fabric and OneLake resources. It provides CRUD operations for Files and Tables in Fabric Lakehouses, UPSERT operstions for Delta Tables, and some Fabric API executions.
+This purpose with this package was to include some of the available options for remote management of Microsoft Fabric and OneLake resources. It provides CRUD operations for Files and Tables in Fabric Lakehouses, UPSERT operstions for Delta Tables, and some Fabric API executions.
 
 The functions are particularly useful for managing Fabric resources within your external CI/CD and IaC pipelines, offering finer-grained control over your Fabric environment.
 
