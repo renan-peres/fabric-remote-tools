@@ -23,4 +23,4 @@ services:
       - GH_PERSONAL_ACCESS_TOKEN
       - GH_USERNAME
       - GH_REPO_NAME
-    command: /bin/bash -c "python /workspace/set_env_vars.py && bash"
+    command: /bin/zsh -c "python /workspace/set_env_vars.py && zsh"

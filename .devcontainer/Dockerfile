@@ -10,10 +10,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     apt-transport-https \
     lsb-release \
     gnupg \
+    zsh \
+    git \
+    fonts-powerline \
     && curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/microsoft.gpg \
     && echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $(lsb_release -cs) main" > /etc/apt/sources.list.d/azure-cli.list \
     && apt-get update && apt-get install -y azure-cli \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Oh My Zsh
+RUN sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+# Install Powerlevel10k theme
+RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
 
 # Set up workspace and install Python Packages
 WORKDIR /workspace
@@ -28,4 +37,10 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && pip install python-dotenv ipykernel \
     && python -m ipykernel install --user --name=python3
 
-CMD ["bash"]
+# Configure Zsh
+COPY .zshrc /root/.zshrc
+
+# Set Zsh as the default shell
+SHELL ["/bin/zsh", "-c"]
+
+CMD ["zsh"]
