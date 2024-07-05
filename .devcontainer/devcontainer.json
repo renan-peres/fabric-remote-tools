@@ -34,7 +34,5 @@
         "GH_REPO_NAME": "${localEnv:GH_REPO_NAME}"
     },
     "postCreateCommand": "python /workspace/set_env_vars.py",
-    "runArgs": ["--env-file", ".env"],
-    "forwardPorts": [],
     "postStartCommand": "echo 'Container is ready!'"
 }
