@@ -39,6 +39,5 @@
         "GH_USERNAME": "${localEnv:GH_USERNAME}",
         "GH_REPO_NAME": "${localEnv:GH_REPO_NAME}"
     },
-    "postCreateCommand": "python /workspace/set_env_vars.py",
-    "postStartCommand": "echo 'Container is ready!'"
+    "postCreateCommand": "python /workspace/set_env_vars.py"
 }
