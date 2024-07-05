@@ -20,7 +20,8 @@
         "ms-python.python",
         "ms-toolsai.jupyter",
         "gerhardbrueckl.fabricstudio",
-        "synapsevscode.synapse"
+        "synapsevscode.synapse",
+        "ms-edgedevtools.vscode-edge-devtools"
     ],
     "remoteEnv": {
         "AZURE_CLIENT_ID": "${localEnv:AZURE_CLIENT_ID}",
