@@ -37,10 +37,17 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && pip install python-dotenv ipykernel \
     && python -m ipykernel install --user --name=python3
 
-# Configure Zsh
-COPY .zshrc /root/.zshrc
+# Set up Oh My Zsh with Powerlevel10k theme
+RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended \
+    && git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k \
+    && sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="powerlevel10k\/powerlevel10k"/g' ~/.zshrc
 
-# Set Zsh as the default shell
-SHELL ["/bin/zsh", "-c"]
+# Set up a basic Powerlevel10k configuration
+RUN echo 'POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true' >> ~/.zshrc \
+    && echo 'POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs)' >> ~/.zshrc \
+    && echo 'POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status root_indicator background_jobs time)' >> ~/.zshrc
+
+# Set default shell to zsh
+ENV SHELL /bin/zsh
 
 CMD ["zsh"]
