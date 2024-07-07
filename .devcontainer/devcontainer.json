@@ -23,6 +23,9 @@
         "synapsevscode.synapse",
         "ms-edgedevtools.vscode-edge-devtools"
     ],
+    "recommendations": [
+        "continue.continue"
+    ],
     "remoteEnv": {
         "AZURE_CLIENT_ID": "${localEnv:AZURE_CLIENT_ID}",
         "AZURE_TENANT_ID": "${localEnv:AZURE_TENANT_ID}",
