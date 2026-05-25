@@ -8,6 +8,7 @@ pyodbc>=5.0.0
 pymssql>=2.2.0
 duckdb>=1.0.0
 requests>=2.31.0
+pytz>=2024.1
 azure-identity>=1.15.0
 azure-devops>=7.1.0b1
 azure-storage-file-datalake>=12.13.0
